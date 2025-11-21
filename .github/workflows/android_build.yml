@@ -14,17 +14,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      # Rimosso: Install Buildozer (Local)
-
-      - name: Build APK via Kivy Docker Image (Installa e Compila)
+      - name: Build APK via Kivy Docker Image (Variabile Ambiente)
         run: |
-          # Questo comando esegue una shell bash nel container, installa l'ultima versione di Buildozer,
-          # e poi esegue il comando di compilazione. La versione aggiornata rispetta warn_on_root = 0.
+          # Questo comando bypassa il prompt interattivo di root tramite variabile d'ambiente,
+          # installa l'ultima versione di Buildozer e compila l'APK.
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          kivy/buildozer /bin/bash -c "pip install buildozer --upgrade && buildozer android release" # <--- MODIFICA FINALE
+          -e 'BUILDOZER_ALLOW_ROOT=1' \ # <--- AGGIUNTA CRUCIALE
+          kivy/buildozer /bin/bash -c "pip install buildozer --upgrade && buildozer android release"
         
       - name: Decode Keystore
         run: |
