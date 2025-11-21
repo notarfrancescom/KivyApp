@@ -11,35 +11,45 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Passaggio 1: Scarica il codice dal repository
       - name: Checkout Code
         uses: actions/checkout@v4
       
+      # Passaggio 2: Installa l'eseguibile buildozer localmente, necessario per il comando Docker
       - name: Install Buildozer (Local)
         run: pip install buildozer
 
+      # Passaggio 3: Compila l'APK all'interno del container Docker ufficiale
       - name: Build APK via Kivy Docker Image
         run: |
-          # Esegui Buildozer all'interno dell'immagine Docker ufficiale della community Kivy
+          # -i: Fornisce l'input standard al container (risolve EOFError)
+          # -v $(pwd):/... : Monta la cartella del progetto all'interno del container
           docker run \
+          -i \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          kivy/buildozer buildozer android release --skip-root-check # <--- AGGIUNTA
-
+          kivy/buildozer buildozer android release --skip-root-check
+        
+      # Passaggio 4: Decodifica e salva il Keystore
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
+      # Passaggio 5: Firma l'APK di rilascio
       - name: Sign APK
         run: |
+          # Trova il percorso dell'APK di rilascio (es. myapp-release.apk)
           APK_PATH=$(find ./bin -name "*-release.apk" -print -quit)
           
+          # Firma l'APK usando jarsigner e i segreti di GitHub
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
           -keystore android.keystore \
           -storepass ${{ secrets.KEYSTORE_PASS }} \
           $APK_PATH ${{ secrets.KEY_ALIAS }} \
           -keypass ${{ secrets.KEY_PASS }}
 
+      # Passaggio 6: Carica l'APK firmato come Artifact scaricabile
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
