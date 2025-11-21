@@ -21,28 +21,35 @@ jobs:
 
       - name: Install Buildozer and Dependencies
         run: |
+          # Installa Buildozer, Cython e le dipendenze di base per la compilazione incrociata.
           pip install buildozer cython 
           sudo apt update
-          # Include libtool e m4 per prevenire l'errore autoreconf su nuovi download
+          # Include libtool e m4 per prevenire l'errore autoreconf/LT_SYS_SYMBOL_USCORE
           sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config libtool m4
 
       - name: Compile APK via Buildozer (Pulizia Totale e Build)
         run: |
-          # 1. Rimuove l'intera cartella Buildozer (risolve definitivamente problemi di cache/config)
+          # 1. Pulizia Forzata: Rimuove TUTTA la cache del toolchain, inclusi i sorgenti nativi corrotti, 
+          # per forzare Buildozer a scaricare e configurare l'ambiente da zero (usando il p4a.branch=develop).
           rm -rf /home/runner/.buildozer/android
           
-          # 2. Esecuzione del build con accettazione automatica di tutte le interazioni
-          # Questo forza un download pulito del nuovo p4a.branch (develop)
-          yes | buildozer android release
+          # 2. Compilazione: Utilizza 'yes |' per rispondere 'y' a tutte le richieste 
+          # di licenza e interazione durante il processo di build.
+          yes | buildozer android release 
         
       - name: Decode Keystore
+        if: success()
         run: |
+          # Decodifica il keystore segreto da Base64 nel file locale.
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       - name: Sign APK
+        if: success()
         run: |
-          APK_PATH=$(find ./bin -name "*-release.apk" -print -quit)
+          # Trova l'APK non firmato generato.
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
           
+          # Firma l'APK con il keystore e le password segrete.
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
           -keystore android.keystore \
           -storepass ${{ secrets.KEYSTORE_PASS }} \
@@ -50,7 +57,10 @@ jobs:
           -keypass ${{ secrets.KEY_PASS }}
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
+          # Carica il file APK firmato (di solito è l'unico file .apk in ./bin dopo la firma, 
+          # ma a volte è meglio specificare il nome se si conosce).
           path: ./bin/*.apk
