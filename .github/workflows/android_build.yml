@@ -19,25 +19,21 @@ jobs:
 
       - name: Build APK via Kivy Docker Image
         run: |
-          # Esegui Buildozer all'interno di un container con gli strumenti Kivy pre-installati
-          # Nota: 'bigharsh/buildozer_release' è un'immagine Docker nota per funzionare
+          # Esegui Buildozer all'interno dell'immagine Docker ufficiale della community Kivy
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          bigharsh/buildozer_release buildozer android release
+          kivy/buildozer buildozer android release
         
-      # Passaggio di firma
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       - name: Sign APK
         run: |
-          # Trova l'APK di release appena creato (es. myapp-release.apk)
           APK_PATH=$(find ./bin -name "*-release.apk" -print -quit)
           
-          # Firma l'APK usando i segreti di GitHub
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
           -keystore android.keystore \
           -storepass ${{ secrets.KEYSTORE_PASS }} \
@@ -48,5 +44,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          # Carica qualsiasi APK firmato presente nella cartella bin/
           path: ./bin/*.apk
