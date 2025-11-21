@@ -14,13 +14,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via Kivy Docker (Forzatura Input Shell)
+      - name: Build APK via Kivy Docker (Patch del Codice)
         run: |
-          # Esegue una shell che reindirizza 'y' (yes) a Buildozer, risolvendo l'EOFError.
+          BUILDOZER_PATH="/home/user/.venv/lib/python3.12/site-packages/buildozer/__init__.py"
+          
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          kivy/buildozer sh -c "yes | buildozer android release" # <--- IL COMANDO FINALE
+          kivy/buildozer sh -c " \
+            # 1. Patch: Commenta la riga 'self.check_root()' nel file client.py (per alcune versioni)
+            sed -i 's/self.check_root()/# self.check_root()/' /home/user/.venv/lib/python3.12/site-packages/buildozer/scripts/client.py && \
+            
+            # 2. Patch: Modifica la funzione check_root() in __init__.py per eliminare la chiamata a input().
+            sed -i 's/cont = input.*//' $BUILDOZER_PATH && \
+            
+            # 3. Esegui la compilazione pulita (dovrebbe procedere).
+            buildozer android release \
+          "
         
       - name: Decode Keystore
         run: |
