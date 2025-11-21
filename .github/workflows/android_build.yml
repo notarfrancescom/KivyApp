@@ -14,17 +14,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build and Run Custom Docker Image
+      - name: Build APK via Kivy Docker (Forzatura Configurazione)
         run: |
-          # 1. Costruisce l'immagine Docker locale usando il Dockerfile
-          docker build -t kivy-builder-local .
-          
-          # 2. Esegue l'immagine locale chiamando l'entrypoint Python del Buildozer.
-          # Questo bypassa lo script wrapper problematico della vecchia versione.
+          # Bypassa il prompt interattivo forzando warn_on_root=0 tramite alias in linea.
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          kivy-builder-local python -m buildozer android release # <--- MODIFICA CRUCIALE
+          kivy/buildozer buildozer --alias:buildozer.warn_on_root=0 android release
         
       - name: Decode Keystore
         run: |
