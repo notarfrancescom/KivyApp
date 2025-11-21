@@ -14,13 +14,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via Kivy CI Docker Image (Alternativa Stabile)
+      - name: Build APK via Kivy Docker (Forzatura TTY)
         run: |
-          # Utilizza l'immagine CI stabile che risolve i problemi di TTY/root
-          docker run \
+          # Aggiunge i flag -it per forzare l'allocazione di uno pseudo-TTY.
+          # Questo risolve l'EOFError ingannando Buildozer facendogli credere che sia interattivo.
+          docker run -it \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          mpare/kivy-buildozer-ci buildozer android release
+          kivy/buildozer buildozer android release
         
       - name: Decode Keystore
         run: |
