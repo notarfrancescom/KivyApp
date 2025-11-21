@@ -26,15 +26,14 @@ jobs:
           # Include libtool e m4 per prevenire l'errore autoreconf su nuovi download
           sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config libtool m4
 
-      - name: Compile APK via Buildozer (Accettazione Licenze Forzata)
+      - name: Compile APK via Buildozer (Pulizia Totale e Build)
         run: |
-          # --- COMANDO DI PULIZIA MANUALE ---
-          # Rimuove i sorgenti nativi potenzialmente corrotti (dove si verificava l'errore autoreconf)
-          rm -rf /home/runner/.buildozer/android/packages
-          # ---------------------------------
+          # 1. Rimuove l'intera cartella Buildozer (risolve definitivamente problemi di cache/config)
+          rm -rf /home/runner/.buildozer/android
           
-          # Esecuzione del build con accettazione automatica di tutte le interazioni
-          yes | buildozer android release 
+          # 2. Esecuzione del build con accettazione automatica di tutte le interazioni
+          # Questo forza un download pulito del nuovo p4a.branch (develop)
+          yes | buildozer android release
         
       - name: Decode Keystore
         run: |
