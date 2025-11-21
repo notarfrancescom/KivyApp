@@ -65,4 +65,4 @@ log_level = 2
 warn_on_root = 0
 
 # (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
-p4a.branch = develop
+p4a.branch = 2023.09.28
