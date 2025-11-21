@@ -17,23 +17,24 @@ jobs:
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Versione stabile per Buildozer
+          python-version: '3.11'
 
       - name: Install Buildozer and Dependencies
         run: |
-          pip install buildozer
+          # Installazione di buildozer e della dipendenza mancante Cython
+          pip install buildozer cython 
+          
           # Installazione delle dipendenze di base del compilatore
           sudo apt update
           sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config
 
       - name: Compile APK via Buildozer
         run: |
-          # buildozer è installato nel runner, non nel Docker, risolvendo tutti i problemi.
+          # buildozer procederà con il download di SDK e NDK
           buildozer android release 
         
       - name: Decode Keystore
         run: |
-          # Questi passi rimangono invariati
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       - name: Sign APK
