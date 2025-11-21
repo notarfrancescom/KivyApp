@@ -22,7 +22,7 @@ version = 0.1
 requirements = python3,kivy
 
 # (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.10
+python.version = 3.11  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
 
 # (list) Supported orientations
 orientation = portrait
@@ -35,7 +35,6 @@ orientation = portrait
 fullscreen = 1
 
 # (list) Permissions
-# Abbiamo rimosso WRITE_EXTERNAL_STORAGE per le API moderne
 android.permissions = android.permission.INTERNET
 
 # (int) Target Android API, dovrebbe essere il più alto possibile.
@@ -64,3 +63,6 @@ log_level = 2
 
 # (int) Display warning if buildozer is run as root (1 = True)
 warn_on_root = 0
+
+# (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
+p4a.branch = develop
