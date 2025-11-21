@@ -14,14 +14,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via Kivy Docker (Definitivo)
+      - name: Build and Run Custom Docker Image
         run: |
-          # Sostituisce la vecchia istanza di Buildozer con una nuova e forza il bypass di root.
+          # 1. Costruisce l'immagine Docker locale usando il Dockerfile (che imposta BUILDOZER_ALLOW_ROOT=1)
+          docker build -t kivy-builder-local .
+          
+          # 2. Esegue l'immagine locale per compilare l'APK
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          -e 'BUILDOZER_ALLOW_ROOT=1' \
-          kivy/buildozer /bin/bash -c "pip uninstall -y buildozer && pip install buildozer && buildozer android release"
+          kivy-builder-local buildozer android release
         
       - name: Decode Keystore
         run: |
