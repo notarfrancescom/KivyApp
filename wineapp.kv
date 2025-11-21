@@ -1,0 +1,4005 @@
+# -*- coding: utf-8 -*-
+#: import FadeTransition kivy.uix.screenmanager.FadeTransition
+
+# ==============================================================================
+# STILI RIUTILIZZABILI
+# ==============================================================================
+
+# Stile per il bottone del menu (sempre in alto a destra)
+<MenuButton@Button>:
+    background_normal: 'materiale/menu_tre_linee.png'
+    background_down: 'materiale/menu_tre_linee_cliccato.png'
+    size_hint: None, None
+    size: 35, 25
+    pos_hint: {"right": 0.95, "top": 0.95}
+
+# Stile per le etichette con il colore del tema
+<RedWineLabel@Label>:
+    font_name: 'materiale/comicbd.ttf'
+    font_size: 16
+    bold: True
+    color: 0.6, 0, 0, 1  # Rosso Scuro-Bordeaux
+
+<WhiteWineLabel@Label>:
+    font_name: 'materiale/comicbd.ttf'
+    font_size: 16
+    bold: True
+    color: 0.7, 0.5, 0.0, 1.0  # Giallo-oro--ocra-scuro
+
+<PinkWineLabel@Label>:
+    font_name: 'materiale/comicbd.ttf'
+    font_size: 16
+    bold: True
+    color: 0.7, 0.45, 0.6, 1.0  # malva scuro
+
+# Stile per i bottoni di selezione in vista, naso, palato
+<SelectionButton@Button>:
+    font_name: 'materiale/comicbd.ttf'
+    background_normal: ''
+    background_down: ''
+    background_color: 0.9, 0.9, 0.9, 0.7  # Bianco sporco e trasparenza al 70%
+    border: 12, 12, 12, 12
+
+
+# Stile per il testo all'interno del menu a discesa dello Spinner
+<SpinnerOption>:
+    font_size: 10  # Regola questo valore (es. 10) in base alle tue esigenze
+    size_hint_y: None
+    height: 18
+    # background_color: 0.1, 0.5, 0.7, 1  # Puoi anche cambiare il colore dello sfondo qui, se vuoi
+
+
+# Stile per i bottoni di navigazione in vista, naso, palato (Indietro, Avanti e Salva Scheda)
+<NavigationButton@Button>:
+    font_name: 'materiale/comicbd.ttf'
+	# Rimuove la texture predefinita del bottone Kivy
+	background_normal: ''
+	background_down: ''
+	font_size: 24
+	background_color: 0.9, 0.9, 0.9, 0  # Bianco sporco e trasparenza al 100%
+	# COLORE PERSONALIZZATO (Azzurro Cielo Chiaro)
+	color: 0.529, 0.808, 0.980, 1
+
+
+# ==============================================================================
+# 1. WelcomeScreen (name: 'welcome')
+# ==============================================================================
+<WelcomeScreen>:
+    name: 'welcome'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+
+        Button:
+            background_normal: "materiale/inizia.png"
+            background_down: "materiale/inizia_cliccato.png"
+            font_size: 20
+            size_hint: None, None
+            size: 100, 50
+            pos_hint: {"center_x": 0.5, "y": 0.15}
+            on_release: root.manager.current = 'selection'
+
+# ==============================================================================
+# 2. WineSelectionScreen (name: 'selection')
+# ==============================================================================
+<WineSelectionScreen>:
+    name: 'selection'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        Image:
+            source: "materiale/che_vino_stai_degustando.png"
+            size_hint: None, None
+            size: 203, 80
+            pos_hint: {"center_x": 0.5, "top": 0.8}
+
+        FloatLayout:
+            size_hint: 0.8, 0.6
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}
+
+            Image:
+                source: "materiale/rosso_bianco_rosato.png"
+                size_hint: 1, 1
+                pos: self.parent.pos
+
+            Button:
+                background_normal: "materiale/rosso.png"
+                background_down: "materiale/rosso_cliccato.png"
+                size_hint: 0.4, 0.3
+                pos_hint: {"x": 0.05, "center_y": 0.5}
+                on_release: root.manager.current = 'vista_rosso'
+
+            Button:
+                background_normal: "materiale/bianco.png"
+                background_down: "materiale/bianco_cliccato.png"
+                size_hint: 0.35, 0.35
+                pos_hint: {"x": 0.35, "center_y": 0.45}
+                on_release: root.manager.current = 'vista_bianco'
+
+            Button:
+                background_normal: "materiale/rosato.png"
+                background_down: "materiale/rosato_cliccato.png"
+                size_hint: 0.35, 0.35
+                pos_hint: {"right": 0.95, "center_y": 0.45}
+                on_release: root.manager.current = 'vista_rosato'
+
+# ==============================================================================
+# 3a. RedWineViewScreen (name: 'vista_rosso')
+# ==============================================================================
+<RedWineViewScreen>:
+    name: 'vista_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosso.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_vista_rosso.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Limpidezza (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: limpidezza_rosso_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Limpidezza"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_limpido
+                        text: "Limpido"
+                        font_size: 20
+                        size_hint_x: 0.6
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('limpidezza_rosso', self, limpidezza_rosso_box.children)
+                    SelectionButton:
+                        id: btn_torbido
+                        text: "Torbido"
+                        font_size: 20
+                        size_hint_x: 0.6
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('limpidezza_rosso', self, limpidezza_rosso_box.children)
+
+                # Intensità vista (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: intensita_vista_rosso_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    RedWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_vista_pallido
+                        text: "Pallido"
+                        font_size: 18
+                        size_hint_x: 0.7
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('intensita_vista_rosso', self, intensita_vista_rosso_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_medio
+                        text: "Medio"
+                        font_size: 18
+                        size_hint_x: 0.7
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('intensita_vista_rosso', self, intensita_vista_rosso_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_intenso
+                        text: "Intenso"
+                        font_size: 18
+                        size_hint_x: 0.7
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('intensita_vista_rosso', self, intensita_vista_rosso_box.children)
+
+                # Colore (SELEZIONE MULTIPLA - PIÙ BOTTONI POSSONO ESSERE PREMUTI)
+                BoxLayout:
+                    id: colore_rosso_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 2
+                    RedWineLabel:
+                        text: "Colore"
+                        size_hint_x: 0.7
+                    SelectionButton:
+                        id: btn_colore_porpora
+                        text: "Porpora"
+                        font_size: 11
+                        size_hint_x: 0.5
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_multiple_select_press('colore_rosso', self)
+                    SelectionButton:
+                        id: btn_colore_rubino
+                        text: "Rubino"
+                        font_size: 11
+                        size_hint_x: 0.5
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_multiple_select_press('colore_rosso', self)
+                    SelectionButton:
+                        id: btn_colore_granata
+                        text: "Granata"
+                        font_size: 11
+                        size_hint_x: 0.5
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_multiple_select_press('colore_rosso', self)
+                    SelectionButton:
+                        id: btn_colore_mattone
+                        text: "Mattone"
+                        font_size: 11
+                        size_hint_x: 0.5
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_multiple_select_press('colore_rosso', self)
+                    SelectionButton:
+                        id: btn_colore_marrone
+                        text: "Marrone"
+                        font_size: 11
+                        size_hint_x: 0.5
+                        # COLORE PERSONALIZZATO (Viola-Rosso)
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_multiple_select_press('colore_rosso', self)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'selection'
+
+                    # L'opacità è 1 (visibile) se self.card_to_update_id è None. 0 (nascosto) altrimenti.
+                    opacity: 1 if app.card_to_update_id == None else 0
+
+                    # Lo disabilita se la modifica è attiva (card_to_update_id NON è None)
+                    disabled: True if app.card_to_update_id != None else False
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'naso_rosso'
+
+# ==============================================================================
+# 3b. WhiteWineViewScreen (name: 'vista_bianco')
+# ==============================================================================
+<WhiteWineViewScreen>:
+    name: 'vista_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_bianco.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_vista_bianco.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Limpidezza (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: limpidezza_bianco_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Limpidezza"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_limpido
+                        text: "Limpido"
+                        size_hint_x: 0.6
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        on_release: root.on_button_press('limpidezza_bianco', self, limpidezza_bianco_box.children)
+                    SelectionButton:
+                        id: btn_torbido
+                        text: "Torbido"
+                        size_hint_x: 0.6
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        on_release: root.on_button_press('limpidezza_bianco', self, limpidezza_bianco_box.children)
+
+                # Intensità vista (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: intensita_vista_bianco_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    WhiteWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_vista_pallido
+                        text: "Pallido"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_bianco', self, intensita_vista_bianco_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_medio
+                        text: "Medio"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_bianco', self, intensita_vista_bianco_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_intenso
+                        text: "Intenso"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_bianco', self, intensita_vista_bianco_box.children)
+
+                # Colore (SELEZIONE MULTIPLA - PIÙ BOTTONI POSSONO ESSERE PREMUTI)
+                BoxLayout:
+                    id: colore_bianco_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 2
+                    WhiteWineLabel:
+                        text: "Colore"
+                        size_hint_x: 0.7
+                    SelectionButton:
+                        id: btn_colore_giallo_lime
+                        text: "Giallo lime"
+                        font_size: 10
+                        size_hint_x: 0.6
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        on_release: root.on_multiple_select_press('colore_bianco', self)
+                    SelectionButton:
+                        id: btn_colore_paglierino
+                        text: "Paglierino"
+                        font_size: 10
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.6
+                        on_release: root.on_multiple_select_press('colore_bianco', self)
+                    SelectionButton:
+                        id: btn_colore_oro
+                        text: "Oro"
+                        font_size: 10
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.4
+                        on_release: root.on_multiple_select_press('colore_bianco', self)
+                    SelectionButton:
+                        id: btn_colore_ambrato
+                        text: "Ambrato"
+                        font_size: 10
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.5
+                        on_release: root.on_multiple_select_press('colore_bianco', self)
+                    SelectionButton:
+                        id: btn_colore_marrone
+                        text: "Marrone"
+                        font_size: 10
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.5
+                        on_release: root.on_multiple_select_press('colore_bianco', self)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'selection'
+
+                    # L'opacità è 1 (visibile) se self.card_to_update_id è None. 0 (nascosto) altrimenti.
+                    opacity: 1 if app.card_to_update_id == None else 0
+
+                    # Lo disabilita se la modifica è attiva (card_to_update_id NON è None)
+                    disabled: True if app.card_to_update_id != None else False
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'naso_bianco'
+
+
+# ==============================================================================
+# 3c. PinkWineViewScreen (name: 'vista_rosato')
+# ==============================================================================
+<PinkWineViewScreen>:
+    name: 'vista_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosato.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_vista_rosato.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Limpidezza (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: limpidezza_rosato_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Limpidezza"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_limpido
+                        text: "Limpido"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('limpidezza_rosato', self, limpidezza_rosato_box.children)
+                    SelectionButton:
+                        id: btn_torbido
+                        text: "Torbido"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('limpidezza_rosato', self, limpidezza_rosato_box.children)
+
+                # Intensità vista (SELEZIONE ESCLUSIVA)
+                BoxLayout:
+                    id: intensita_vista_rosato_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    PinkWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_vista_pallido
+                        text: "Pallido"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_rosato', self, intensita_vista_rosato_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_medio
+                        text: "Medio"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_rosato', self, intensita_vista_rosato_box.children)
+                    SelectionButton:
+                        id: btn_intensita_vista_intenso
+                        text: "Intenso"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_vista_rosato', self, intensita_vista_rosato_box.children)
+
+                # Colore (SELEZIONE MULTIPLA - PIÙ BOTTONI POSSONO ESSERE PREMUTI)
+                BoxLayout:
+                    id: colore_rosato_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 2
+                    PinkWineLabel:
+                        text: "Colore"
+                        size_hint_x: 0.7
+                    SelectionButton:
+                        id: btn_colore_rosa
+                        text: "Rosa"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.4
+                        on_release: root.on_multiple_select_press('colore_rosato', self)
+                    SelectionButton:
+                        id: btn_colore_rosa_arancio
+                        text: "Rosa arancio"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.6
+                        on_release: root.on_multiple_select_press('colore_rosato', self)
+                    SelectionButton:
+                        id: btn_colore_arancione
+                        text: "Arancione"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.6
+                        on_release: root.on_multiple_select_press('colore_rosato', self)
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'selection'
+
+                    # L'opacità è 1 (visibile) se self.card_to_update_id è None. 0 (nascosto) altrimenti.
+                    opacity: 1 if app.card_to_update_id == None else 0
+
+                    # Lo disabilita se la modifica è attiva (card_to_update_id NON è None)
+                    disabled: True if app.card_to_update_id != None else False
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'naso_rosato'
+
+
+# ==============================================================================
+# 4a. RedWineNoseScreen (name: 'naso_rosso')
+# ==============================================================================
+<RedWineNoseScreen>:
+    name: 'naso_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosso.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_naso_rosso.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Condizione
+                BoxLayout:
+                    id: condizione_rosso_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Condizione"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_condizione_pulito
+                        text: "Pulito"
+                        font_size: 20
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_rosso', self, condizione_rosso_box.children)
+                    SelectionButton:
+                        id: btn_condizione_non_pulito
+                        text: "Non Pulito"
+                        font_size: 20
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_rosso', self, condizione_rosso_box.children)
+
+                # Intensità naso
+                BoxLayout:
+                    id: intensita_naso_rosso_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    RedWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_naso_bassa
+                        text: "Bassa"
+                        font_size: 20
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosso', self, intensita_naso_rosso_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_media
+                        text: "Media"
+                        font_size: 20
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosso', self, intensita_naso_rosso_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_alta
+                        text: "Alta"
+                        font_size: 20
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosso', self, intensita_naso_rosso_box.children)
+
+                # Profumo
+                BoxLayout:
+                    id: profumo_rosso_box
+                    size_hint_y: None
+                    height: 130
+                    spacing: 2
+                    RedWineLabel:
+                        text: "Profumo"
+                        size_hint_x: 0.4
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: profumo_primari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Primari"
+                                color: 0.6, 0, 0, 1
+                                font_size: 12
+                                size_hint_y: None
+                                height: 13
+                            SelectionButton:
+                                id: btn_profumo_ciliegia
+                                text: "Ciliegia"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_mora
+                                text: "Mora"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_peperone_verde
+                                text: "Peperone verde"
+                                font_size: 9
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_prugna
+                                text: "Prugna"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_ribes_nero
+                                text: "Ribes nero"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_violetta
+                                text: "Violetta"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                        BoxLayout:
+                            id: profumo_secondari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Secondari"
+                                font_size: 12
+                                color: 0.6, 0, 0, 1
+                                size_hint_y: None
+                                height: 13
+                            SelectionButton:
+                                id: btn_profumo_burro
+                                text: "Burro"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_lievito
+                                text: "Lievito"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_pane_tostato
+                                text: "Pane tostato"
+                                font_size: 9
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                        BoxLayout:
+                            id: profumo_terzari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Terziari"
+                                font_size: 12
+                                color: 0.6, 0, 0, 1
+                                size_hint_y: None
+                                height: 13
+                            SelectionButton:
+                                id: btn_profumo_cacao
+                                text: "Cacao"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_catrame
+                                text: "Catrame"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_cuoio
+                                text: "Cuoio"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_spezie
+                                text: "Spezie"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_tabacco
+                                text: "Tabacco"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+                            SelectionButton:
+                                id: btn_profumo_vaniglia
+                                text: "Vaniglia"
+                                font_size: 11
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('profumo_rosso', self)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'vista_rosso'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'palato_rosso'
+
+# ==============================================================================
+# 4b. WhiteWineNoseScreen (name: 'naso_bianco')
+# ==============================================================================
+<WhiteWineNoseScreen>:
+    name: 'naso_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_bianco.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_naso_bianco.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Condizione
+                BoxLayout:
+                    id: condizione_bianco_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Condizione"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_condizione_pulito
+                        text: "Pulito"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_bianco', self, condizione_bianco_box.children)
+                    SelectionButton:
+                        id: btn_condizione_non_pulito
+                        text: "Non Pulito"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_bianco', self, condizione_bianco_box.children)
+
+                # Intensità naso
+                BoxLayout:
+                    id: intensita_naso_bianco_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    WhiteWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_naso_bassa
+                        text: "Bassa"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_bianco', self, intensita_naso_bianco_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_media
+                        text: "Media"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_bianco', self, intensita_naso_bianco_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_alta
+                        text: "Alta"
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_bianco', self, intensita_naso_bianco_box.children)
+
+                # Profumo
+                BoxLayout:
+                    id: profumo_bianco_box
+                    size_hint_y: None
+                    height: 138
+                    spacing: 2
+                    WhiteWineLabel:
+                        text: "Profumo"
+                        size_hint_x: 0.4
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: profumo_primari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Primari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_albicocca
+                                text: "Albicocca"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_ananas
+                                text: "Ananas"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_banana
+                                text: "Banana"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_limone
+                                text: "Limone"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_mango
+                                text: "Mango"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_pesca
+                                text: "Pesca"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_pompelmo
+                                text: "Pompelmo"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                        BoxLayout:
+                            id: profumo_secondari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Secondari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_basilico
+                                text: "Basilico"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_fiori_bianchi
+                                text: "Fiori bianchi"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_salvia
+                                text: "Salvia"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_timo
+                                text: "Timo"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                        BoxLayout:
+                            id: profumo_terzari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Terziari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_cannella
+                                text: "Cannella"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_note_minerali
+                                text: "Note minerali"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_vaniglia
+                                text: "Vaniglia"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                            SelectionButton:
+                                id: btn_profumo_zafferano
+                                text: "Zafferano"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('profumo_bianco', self)
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'vista_bianco'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'palato_bianco'
+
+
+# ==============================================================================
+# 4c. PinkWineNoseScreen (name: 'naso_rosato')
+# ==============================================================================
+<PinkWineNoseScreen>:
+    name: 'naso_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosato.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_naso_rosato.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Condizione
+                BoxLayout:
+                    id: condizione_rosato_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Condizione"
+                        size_hint_x: 0.5
+                    SelectionButton:
+                        id: btn_condizione_pulito
+                        text: "Pulito"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_rosato', self, condizione_rosato_box.children)
+                    SelectionButton:
+                        id: btn_condizione_non_pulito
+                        text: "Non Pulito"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.6
+                        on_release: root.on_button_press('condizione_rosato', self, condizione_rosato_box.children)
+
+                # Intensità naso
+                BoxLayout:
+                    id: intensita_naso_rosato_box
+                    size_hint_y: None
+                    height: 35
+                    spacing: 4
+                    PinkWineLabel:
+                        text: "Intensità"
+                        size_hint_x: 0.8
+                    SelectionButton:
+                        id: btn_intensita_naso_bassa
+                        text: "Bassa"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosato', self, intensita_naso_rosato_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_media
+                        text: "Media"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosato', self, intensita_naso_rosato_box.children)
+                    SelectionButton:
+                        id: btn_intensita_naso_alta
+                        text: "Alta"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.7
+                        on_release: root.on_button_press('intensita_naso_rosato', self, intensita_naso_rosato_box.children)
+
+                # Profumo
+                BoxLayout:
+                    id: profumo_rosato_box
+                    size_hint_y: None
+                    height: 138
+                    spacing: 2
+                    PinkWineLabel:
+                        text: "Profumo"
+                        size_hint_x: 0.4
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: profumo_primari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Primari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_arancia_rossa
+                                text: "Arancia rossa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_ciliegia
+                                text: "Ciliegia"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_fragola
+                                text: "Fragola"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_lampone
+                                text: "Lampone"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_mango
+                                text: "Mango"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_melone
+                                text: "Melone"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_pompelmo_rosa
+                                text: "Pompelmo rosa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                        BoxLayout:
+                            id: profumo_secondari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Secondari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_basilico
+                                text: "Basilico"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_menta
+                                text: "Menta"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_rosa
+                                text: "Rosa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_violetta
+                                text: "Violetta"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                        BoxLayout:
+                            id: profumo_terzari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Terziari"
+                                font_size: 12
+                                size_hint_y: None
+                                height: 12
+                            SelectionButton:
+                                id: btn_profumo_cannella
+                                text: "Cannella"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_note_minerali
+                                text: "Note minerali"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                            SelectionButton:
+                                id: btn_profumo_vaniglia
+                                text: "Vaniglia"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 11
+                                on_release: root.on_multiple_select_press('profumo_rosato', self)
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'vista_rosato'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'palato_rosato'
+
+
+
+# ==============================================================================
+# 5a. RedWineTasteScreen (name: 'palato_rosso')
+# ==============================================================================
+<RedWineTasteScreen>:
+    name: 'palato_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosso.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_palato_rosso.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 3
+
+                # Dolcezza
+                BoxLayout:
+                    id: dolcezza_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 2
+                    RedWineLabel:
+                        text: "Dolcezza"
+                        size_hint_x: 0.3
+                    SelectionButton:
+                        id: btn_dolcezza_secco
+                        text: "Secco"
+                        size_hint_x: 0.15
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('dolcezza_rosso', self, dolcezza_rosso_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_abboccato
+                        text: "Abboccato"
+                        size_hint_x: 0.2
+                        font_size: 9
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('dolcezza_rosso', self, dolcezza_rosso_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_amabile
+                        text: "Amabile"
+                        size_hint_x: 0.17
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('dolcezza_rosso', self, dolcezza_rosso_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_dolce
+                        text: "Dolce"
+                        size_hint_x: 0.15
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        on_release: root.on_button_press('dolcezza_rosso', self, dolcezza_rosso_box.children)
+
+                # Acidità
+                BoxLayout:
+                    id: acidita_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    RedWineLabel:
+                        text: "Acidità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_acidita_bassa
+                        text: "Bassa"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosso', self, acidita_rosso_box.children)
+                    SelectionButton:
+                        id: btn_acidita_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosso', self, acidita_rosso_box.children)
+                    SelectionButton:
+                        id: btn_acidita_alta
+                        text: "Alta"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosso', self, acidita_rosso_box.children)
+
+                # Tannicità
+                BoxLayout:
+                    id: tannicita_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    RedWineLabel:
+                        text: "Tannicità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_tannicita_bassa
+                        text: "Bassa"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosso', self, tannicita_rosso_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosso', self, tannicita_rosso_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_alta
+                        text: "Alta"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosso', self, tannicita_rosso_box.children)
+
+                # Livello Alcolico
+                BoxLayout:
+                    id: livello_alcolico_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    RedWineLabel:
+                        text: "Liv.Alcolico"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_alcol_basso
+                        text: "Basso"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosso', self, livello_alcolico_rosso_box.children)
+                    SelectionButton:
+                        id: btn_alcol_medio
+                        text: "Medio"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosso', self, livello_alcolico_rosso_box.children)
+                    SelectionButton:
+                        id: btn_alcol_alto
+                        text: "Alto"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosso', self, livello_alcolico_rosso_box.children)
+
+                # Corpo
+                BoxLayout:
+                    id: corpo_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    RedWineLabel:
+                        text: "Corpo"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: corpo_basso
+                        text: "Basso"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosso', self, corpo_rosso_box.children)
+                    SelectionButton:
+                        id: corpo_medio
+                        text: "Medio"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosso', self, corpo_rosso_box.children)
+                    SelectionButton:
+                        id: corpo_alto
+                        text: "Alto"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosso', self, corpo_rosso_box.children)
+
+                # Sapore
+                BoxLayout:
+                    id: sapore_rosso_box
+                    size_hint_y: None
+                    height: 134
+                    spacing: 2
+                    RedWineLabel:
+                        text: "Sapore"
+                        size_hint_x: 0.42
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: sapore_primari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Primari"
+                                font_size: 10
+                                color: 0.6, 0, 0, 1
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_ciliegia
+                                text: "Ciliegia"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_mora
+                                text: "Mora"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_peperone_verde
+                                text: "Peperone verde"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_prugna
+                                text: "Prugna"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_ribes_nero
+                                text: "Ribes nero"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                        BoxLayout:
+                            id: sapore_secondari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Secondari"
+                                font_size: 10
+                                color: 0.6, 0, 0, 1
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_caffe
+                                text: "Caffe'"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_caramello
+                                text: "Caramello"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_ferro
+                                text: "Ferro"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_frutta_secca
+                                text: "Frutta Secca"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_miele
+                                text: "Miele"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_pane_tostato
+                                text: "Pane Tostato"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_pietra
+                                text: "Pietra"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+
+                        BoxLayout:
+                            id: sapore_terzari_rosso_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            RedWineLabel:
+                                text: "Terziari"
+                                font_size: 10
+                                color: 0.6, 0, 0, 1
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_cacao
+                                text: "Cacao"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_foglie_secche
+                                text: "Foglie Secche"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_funghi
+                                text: "Funghi"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_spezie
+                                text: "Spezie"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_tabacco
+                                text: "Tabacco"
+                                font_size: 10
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+                            SelectionButton:
+                                id: sapore_vaniglia
+                                text: "Vaniglia"
+                                font_size: 8
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_multiple_select_press('sapore_rosso', self)
+
+                # Persistenza
+                BoxLayout:
+                    id: persistenza_rosso_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    RedWineLabel:
+                        text: "Persistenza"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: persistenza_corta
+                        text: "Corta"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosso', self, persistenza_rosso_box.children)
+                    SelectionButton:
+                        id: persistenza_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosso', self, persistenza_rosso_box.children)
+                    SelectionButton:
+                        id: persistenza_lunga
+                        text: "Lunga"
+                        font_size: 11
+                        color: 0.6, 0.2, 0.4, 1
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosso', self, persistenza_rosso_box.children)
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'naso_rosso'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'conclusioni_rosso'
+
+# ==============================================================================
+# 5b. WhiteWineTasteScreen (name: 'palato_bianco')
+# ==============================================================================
+<WhiteWineTasteScreen>:
+    name: 'palato_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_bianco.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_palato_bianco.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 3
+
+                # Dolcezza
+                BoxLayout:
+                    id: dolcezza_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 2
+                    WhiteWineLabel:
+                        text: "Dolcezza"
+                        size_hint_x: 0.3
+                    SelectionButton:
+                        id: btn_dolcezza_secco
+                        text: "Secco"
+                        size_hint_x: 0.15
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_bianco', self, dolcezza_bianco_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_abboccato
+                        text: "Abboccato"
+                        size_hint_x: 0.2
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        font_size: 9
+                        on_release: root.on_button_press('dolcezza_bianco', self, dolcezza_bianco_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_amabile
+                        text: "Amabile"
+                        size_hint_x: 0.17
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_bianco', self, dolcezza_bianco_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_dolce
+                        text: "Dolce"
+                        size_hint_x: 0.15
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_bianco', self, dolcezza_bianco_box.children)
+
+                # Acidità
+                BoxLayout:
+                    id: acidita_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    WhiteWineLabel:
+                        text: "Acidità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_acidita_bassa
+                        text: "Bassa"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_bianco', self, acidita_bianco_box.children)
+                    SelectionButton:
+                        id: btn_acidita_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_bianco', self, acidita_bianco_box.children)
+                    SelectionButton:
+                        id: btn_acidita_alta
+                        text: "Alta"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_bianco', self, acidita_bianco_box.children)
+
+                # Tannicità
+                BoxLayout:
+                    id: tannicita_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    WhiteWineLabel:
+                        text: "Tannicità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_tannicita_bassa
+                        text: "Bassa"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_bianco', self, tannicita_bianco_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_bianco', self, tannicita_bianco_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_alta
+                        text: "Alta"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_bianco', self, tannicita_bianco_box.children)
+
+                # Livello Alcolico
+                BoxLayout:
+                    id: livello_alcolico_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    WhiteWineLabel:
+                        text: "Liv.Alcolico"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_alcol_basso
+                        text: "Basso"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_bianco', self, livello_alcolico_bianco_box.children)
+                    SelectionButton:
+                        id: btn_alcol_medio
+                        text: "Medio"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_bianco', self, livello_alcolico_bianco_box.children)
+                    SelectionButton:
+                        id: btn_alcol_alto
+                        text: "Alto"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_bianco', self, livello_alcolico_bianco_box.children)
+
+                # Corpo
+                BoxLayout:
+                    id: corpo_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    WhiteWineLabel:
+                        text: "Corpo"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: corpo_basso
+                        text: "Basso"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_bianco', self, corpo_bianco_box.children)
+                    SelectionButton:
+                        id: corpo_medio
+                        text: "Medio"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_bianco', self, corpo_bianco_box.children)
+                    SelectionButton:
+                        id: corpo_alto
+                        text: "Alto"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_bianco', self, corpo_bianco_box.children)
+
+                # Sapore
+                BoxLayout:
+                    id: sapore_bianco_box
+                    size_hint_y: None
+                    height: 150
+                    spacing: 2
+                    WhiteWineLabel:
+                        text: "Sapore"
+                        size_hint_x: 0.42
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: sapore_primari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Primari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 10
+                            SelectionButton:
+                                id: sapore_ananas
+                                text: "Ananas"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_lime
+                                text: "Lime"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_limone
+                                text: "Limone"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_mela
+                                text: "Mela"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_papaya
+                                text: "Papaya"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_pera
+                                text: "Pera"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_pesca
+                                text: "Pesca"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_pompelmo
+                                text: "Pompelmo"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                        BoxLayout:
+                            id: sapore_secondari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Secondari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 10
+                            SelectionButton:
+                                id: sapore_asparagi
+                                text: "Asparagi"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_erba_tagliata
+                                text: "Erba tagliata"
+                                font_size: 9
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_fiori_bianchi
+                                text: "Fiori bianchi"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_foglia_pomodoro
+                                text: "Foglia pomodoro"
+                                font_size: 8
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                        BoxLayout:
+                            id: sapore_terzari_bianco_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            WhiteWineLabel:
+                                text: "Terziari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 10
+                            SelectionButton:
+                                id: sapore_cannella
+                                text: "Cannella"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_noce_moscata
+                                text: "Noce moscata"
+                                font_size: 9
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_note_minerali
+                                text: "Note minerali"
+                                font_size: 9
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+                            SelectionButton:
+                                id: sapore_vaniglia
+                                text: "Vaniglia"
+                                font_size: 10
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                on_release: root.on_multiple_select_press('sapore_bianco', self)
+
+                # Persistenza
+                BoxLayout:
+                    id: persistenza_bianco_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    WhiteWineLabel:
+                        text: "Persistenza"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: persistenza_corta
+                        text: "Corta"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_bianco', self, persistenza_bianco_box.children)
+                    SelectionButton:
+                        id: persistenza_media
+                        text: "Media"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_bianco', self, persistenza_bianco_box.children)
+                    SelectionButton:
+                        id: persistenza_lunga
+                        text: "Lunga"
+                        font_size: 11
+                        color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_bianco', self, persistenza_bianco_box.children)
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'naso_bianco'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'conclusioni_bianco'
+
+# ==============================================================================
+# 5c. PinkWineTasteScreen (name: 'palato_rosato')
+# ==============================================================================
+<PinkWineTasteScreen>:
+    name: 'palato_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosato.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_palato_rosato.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 3
+
+                # Dolcezza
+                BoxLayout:
+                    id: dolcezza_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 2
+                    PinkWineLabel:
+                        text: "Dolcezza"
+                        size_hint_x: 0.3
+                    SelectionButton:
+                        id: btn_dolcezza_secco
+                        text: "Secco"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.15
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_rosato', self, dolcezza_rosato_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_abboccato
+                        text: "Abboccato"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.2
+                        font_size: 9
+                        on_release: root.on_button_press('dolcezza_rosato', self, dolcezza_rosato_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_amabile
+                        text: "Amabile"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.17
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_rosato', self, dolcezza_rosato_box.children)
+                    SelectionButton:
+                        id: btn_dolcezza_dolce
+                        text: "Dolce"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        size_hint_x: 0.15
+                        font_size: 11
+                        on_release: root.on_button_press('dolcezza_rosato', self, dolcezza_rosato_box.children)
+
+                # Acidità
+                BoxLayout:
+                    id: acidita_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    PinkWineLabel:
+                        text: "Acidità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_acidita_bassa
+                        text: "Bassa"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosato', self, acidita_rosato_box.children)
+                    SelectionButton:
+                        id: btn_acidita_media
+                        text: "Media"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosato', self, acidita_rosato_box.children)
+                    SelectionButton:
+                        id: btn_acidita_alta
+                        text: "Alta"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('acidita_rosato', self, acidita_rosato_box.children)
+
+                # Tannicità
+                BoxLayout:
+                    id: tannicita_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    PinkWineLabel:
+                        text: "Tannicità"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_tannicita_bassa
+                        text: "Bassa"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosato', self, tannicita_rosato_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_media
+                        text: "Media"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosato', self, tannicita_rosato_box.children)
+                    SelectionButton:
+                        id: btn_tannicita_alta
+                        text: "Alta"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('tannicita_rosato', self, tannicita_rosato_box.children)
+
+                # Livello Alcolico
+                BoxLayout:
+                    id: livello_alcolico_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    PinkWineLabel:
+                        text: "Liv.Alcolico"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: btn_alcol_basso
+                        text: "Basso"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosato', self, livello_alcolico_rosato_box.children)
+                    SelectionButton:
+                        id: btn_alcol_medio
+                        text: "Medio"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosato', self, livello_alcolico_rosato_box.children)
+                    SelectionButton:
+                        id: btn_alcol_alto
+                        text: "Alto"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('livello_alcolico_rosato', self, livello_alcolico_rosato_box.children)
+
+                # Corpo
+                BoxLayout:
+                    id: corpo_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    PinkWineLabel:
+                        text: "Corpo"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: corpo_basso
+                        text: "Basso"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosato', self, corpo_rosato_box.children)
+                    SelectionButton:
+                        id: corpo_medio
+                        text: "Medio"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosato', self, corpo_rosato_box.children)
+                    SelectionButton:
+                        id: corpo_alto
+                        text: "Alto"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('corpo_rosato', self, corpo_rosato_box.children)
+
+                # Sapore
+                BoxLayout:
+                    id: sapore_rosato_box
+                    size_hint_y: None
+                    height: 136
+                    spacing: 2
+                    PinkWineLabel:
+                        text: "Sapore"
+                        size_hint_x: 0.42
+                    BoxLayout:
+                        spacing: 2
+                        padding: 2
+                        BoxLayout:
+                            id: sapore_primari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Primari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_arancia_rossa
+                                text: "Arancia rossa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_ciliegia
+                                text: "Ciliegia"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_fragola
+                                text: "Fragola"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_lampone
+                                text: "Lampone"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_mango
+                                text: "Mango"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_melone
+                                text: "Melone"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_pompelmo_rosa
+                                text: "Pompelmo rosa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 8
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                        BoxLayout:
+                            id: sapore_secondari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Secondari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_basilico
+                                text: "Basilico"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_menta
+                                text: "Menta"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_rosa
+                                text: "Rosa"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_violetta
+                                text: "Violetta"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                        BoxLayout:
+                            id: sapore_terzari_rosato_box
+                            orientation: 'vertical'
+                            spacing: 1
+                            PinkWineLabel:
+                                text: "Terziari"
+                                font_size: 10
+                                size_hint_y: None
+                                height: 11
+                            SelectionButton:
+                                id: sapore_cannella
+                                text: "Cannella"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_note_minerali
+                                text: "Note minerali"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 9
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+                            SelectionButton:
+                                id: sapore_vaniglia
+                                text: "Vaniglia"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                font_size: 10
+                                on_release: root.on_multiple_select_press('sapore_rosato', self)
+
+                # Persistenza
+                BoxLayout:
+                    id: persistenza_rosato_box
+                    size_hint_y: 0.14
+                    spacing: 3
+                    PinkWineLabel:
+                        text: "Persistenza"
+                        size_hint_x: 0.4
+                    SelectionButton:
+                        id: persistenza_corta
+                        text: "Corta"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosato', self, persistenza_rosato_box.children)
+                    SelectionButton:
+                        id: persistenza_media
+                        text: "Media"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosato', self, persistenza_rosato_box.children)
+                    SelectionButton:
+                        id: persistenza_lunga
+                        text: "Lunga"
+                        color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                        font_size: 11
+                        size_hint_x: 0.3
+                        on_release: root.on_button_press('persistenza_rosato', self, persistenza_rosato_box.children)
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'naso_rosato'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'conclusioni_rosato'
+
+
+
+# ==============================================================================
+# 6a. RedWineEpilogueScreen (name: 'conclusioni_rosso')
+# ==============================================================================
+<RedWineEpilogueScreen>:
+    name: 'conclusioni_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosso.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_conclusioni_rosso.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Livello di qualità
+                BoxLayout:
+                    size_hint_y: None
+                    height: 200
+                    spacing: 8
+                    RedWineLabel:
+                        text: "Livello di Qualità"
+                        size_hint_x: 0.85
+                    BoxLayout:
+                        spacing: 5
+                        padding: 5
+                        BoxLayout:
+                            id: qualita_rosso_box
+                            orientation: 'vertical'
+                            spacing: 5
+                            SelectionButton:
+                                id: qualita_difettoso
+                                text: "Difettoso"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+                            SelectionButton:
+                                id: qualita_mediocre
+                                text: "Mediocre"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+                            SelectionButton:
+                                id: qualita_discreto
+                                text: "Discreto"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+                            SelectionButton:
+                                id: qualita_buono
+                                text: "Buono"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+                            SelectionButton:
+                                id: qualita_molto_buono
+                                text: "Molto Buono"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+                            SelectionButton:
+                                id: qualita_eccellente
+                                text: "Eccellente"
+                                size_hint_x: 0.75
+                                color: 0.6, 0.2, 0.4, 1
+                                on_release: root.on_button_press('qualita_rosso', self, qualita_rosso_box.children)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'palato_rosso'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'info_rosso'
+
+# ==============================================================================
+# 6b. WhiteWineEpilogueScreen (name: 'conclusioni_bianco')
+# ==============================================================================
+<WhiteWineEpilogueScreen>:
+    name: 'conclusioni_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_bianco.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_conclusioni_bianco.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Livello di qualità
+                BoxLayout:
+                    size_hint_y: None
+                    height: 200
+                    spacing: 8
+                    WhiteWineLabel:
+                        text: "Livello di Qualità"
+                        size_hint_x: 0.85
+                    BoxLayout:
+                        spacing: 5
+                        padding: 5
+                        BoxLayout:
+                            id: qualita_bianco_box
+                            orientation: 'vertical'
+                            spacing: 5
+                            SelectionButton:
+                                id: qualita_difettoso
+                                text: "Difettoso"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+                            SelectionButton:
+                                id: qualita_mediocre
+                                text: "Mediocre"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+                            SelectionButton:
+                                id: qualita_discreto
+                                text: "Discreto"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+                            SelectionButton:
+                                id: qualita_buono
+                                text: "Buono"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+                            SelectionButton:
+                                id: qualita_molto_buono
+                                text: "Molto Buono"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+                            SelectionButton:
+                                id: qualita_eccellente
+                                text: "Eccellente"
+                                color: 0.9, 0.7, 0.1, 1.0  # Giallo-oro luminoso
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_bianco', self, qualita_bianco_box.children)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'palato_bianco'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'info_bianco'
+
+# ==============================================================================
+# 6c. PinkWineEpilogueScreen (name: 'conclusioni_rosato')
+# ==============================================================================
+<PinkWineEpilogueScreen>:
+    name: 'conclusioni_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosato.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_conclusioni_rosato.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+
+                # Livello di qualità
+                BoxLayout:
+                    size_hint_y: None
+                    height: 200
+                    spacing: 8
+                    PinkWineLabel:
+                        text: "Livello di Qualità"
+                        #font_size: 18
+                        size_hint_x: 0.85
+                    BoxLayout:
+                        spacing: 5
+                        padding: 5
+                        BoxLayout:
+                            id: qualita_rosato_box
+                            orientation: 'vertical'
+                            spacing: 5
+                            SelectionButton:
+                                id: qualita_difettoso
+                                text: "Difettoso"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+                            SelectionButton:
+                                id: qualita_mediocre
+                                text: "Mediocre"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+                            SelectionButton:
+                                id: qualita_discreto
+                                text: "Discreto"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+                            SelectionButton:
+                                id: qualita_buono
+                                text: "Buono"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+                            SelectionButton:
+                                id: qualita_molto_buono
+                                text: "Molto Buono"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+                            SelectionButton:
+                                id: qualita_eccellente
+                                text: "Eccellente"
+                                color: 0.85, 0.6, 0.8, 1.0  # malva chiaro e delicato
+                                size_hint_x: 0.75
+                                on_release: root.on_button_press('qualita_rosato', self, qualita_rosato_box.children)
+
+                Label:
+                    size_hint_y: 0.1
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'palato_rosato'
+
+                NavigationButton:
+                    text: "Avanti"
+                    on_release: root.manager.current = 'info_rosato'
+
+
+# ==============================================================================
+# 7a. RedWineInfoScreen (name: 'info_rosso')
+# ==============================================================================
+<RedWineInfoScreen>:
+    name: 'info_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosso.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_info_rosso.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+                padding: 5
+
+                Label:
+                    size_hint_y: 0.1
+
+                # Nome vino rosso
+                BoxLayout:
+                    id: nome_rosso_box
+                    #orientation: 'horizontal'
+                    size_hint_y: 0.12
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Nome"
+                        size_hint_x: 0.3
+                    TextInput:
+                        id: nome_rosso
+                        font_name: 'materiale/comicbd.ttf'
+                        font_size: 11
+                        hint_text: "Nome del vino"
+                        multiline: False
+
+                # Produttore vino rosso
+                BoxLayout:
+                    id: produttore_rosso_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Produttore"
+                        size_hint_x: 0.3
+                        font_size: 13
+                    TextInput:
+                        id: produttore_rosso
+                        font_name: 'materiale/comicbd.ttf'
+                        font_size: 11
+                        hint_text: "Produttore del vino"
+                        multiline: False
+
+                # Annata vino rosso
+                BoxLayout:
+                    id: annata_rosso_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Annata"
+                        size_hint_x: 0.8
+                    TextInput:
+                        id: annata_rosso
+                        font_name: 'materiale/comicbd.ttf'
+                        font_size: 12
+                        hint_text: "Anno del vino"
+                        multiline: False
+
+                # Gradazione alcolica vino rosso
+                BoxLayout:
+                    id: gradazione_alcolica_rosso_box
+                    size_hint_y: 0.14
+                    #height: 35
+                    spacing: 5
+                    RedWineLabel:
+                        text: "Vol."
+                        size_hint_x: 0.8
+                    #Label:
+                    #    size_hint_x: 0.8
+                    Spinner:
+                        id: alcol_rosso
+                        background_normal: ""
+                        #background_color: (1, 0.5, 0, 1)
+                        background_color: (0.6, 0, 0, 1)
+                        color: (1, 1, 1, 1)
+                        font_name: 'materiale/comicbd.ttf'
+                        text: "Gradazione alcolica"
+                        font_name: 'materiale/comicbd.ttf'
+                        values: ["10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "15.5", "16", "16.5", "17", "17.5", "18"]
+                    #Label:
+                    #    size_hint_x: 0.4
+
+                Label:
+                    size_hint_y: 0.2
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'conclusioni_rosso'
+
+                NavigationButton:
+                    id: nav_salva_rosso
+                    text: "Salva Scheda"
+                    on_release: app.show_confirm_popup('rosso', root)
+
+
+# ==============================================================================
+# 7b. WhiteWineInfoScreen (name: 'info_bianco')
+# ==============================================================================
+<WhiteWineInfoScreen>:
+    name: 'info_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_bianco.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_info_bianco.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+                padding: 5
+
+                Label:
+                    size_hint_y: 0.1
+
+                # Nome vino bianco
+                BoxLayout:
+                    id: nome_bianco_box
+                    #orientation: 'horizontal'
+                    size_hint_y: 0.12
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Nome"
+                        size_hint_x: 0.3
+                    TextInput:
+                        id: nome_bianco
+                        font_size: 11
+                        font_name: 'materiale/comicbd.ttf'
+                        hint_text: "Nome del vino"
+                        multiline: False
+
+                # Produttore vino bianco
+                BoxLayout:
+                    id: produttore_bianco_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Produttore"
+                        size_hint_x: 0.3
+                        font_size: 13
+                    TextInput:
+                        id: produttore_bianco
+                        font_size: 11
+                        font_name: 'materiale/comicbd.ttf'
+                        hint_text: "Produttore del vino"
+                        multiline: False
+
+                # Annata vino bianco
+                BoxLayout:
+                    id: annata_bianco_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Annata"
+                        size_hint_x: 0.8
+                    TextInput:
+                        id: annata_bianco
+                        hint_text: "Anno del vino"
+                        font_size: 12
+                        font_name: 'materiale/comicbd.ttf'
+                        multiline: False
+
+                # Gradazione alcolica vino bianco
+                BoxLayout:
+                    id: gradazione_alcolica_bianco_box
+                    size_hint_y: 0.14
+                    #height: 35
+                    spacing: 5
+                    WhiteWineLabel:
+                        text: "Vol."
+                        size_hint_x: 0.8
+                    #Label:
+                    #    size_hint_x: 0.8
+                    Spinner:
+                        id: alcol_bianco
+                        background_normal: ""
+                        #background_color: (1, 0.5, 0, 1)
+                        background_color: (0.7, 0.5, 0.0, 1.0)
+                        color: (1, 1, 1, 1)
+                        text: "Gradazione alcolica"
+                        font_name: 'materiale/comicbd.ttf'
+                        values: ["10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "15.5", "16", "16.5", "17", "17.5", "18"]
+                    #Label:
+                    #    size_hint_x: 0.4
+
+                Label:
+                    size_hint_y: 0.2
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'conclusioni_bianco'
+
+                NavigationButton:
+                    id: nav_salva_bianco
+                    text: "Salva Scheda"
+                    on_release: app.show_confirm_popup('bianco', root)
+
+# ==============================================================================
+# 7c. PinkWineInfoScreen (name: 'info_rosato')
+# ==============================================================================
+<PinkWineInfoScreen>:
+    name: 'info_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 100
+                spacing: 10
+
+                Image:
+                    source: 'materiale/scheda_degustazione_rosato.png'
+                    size_hint_y: 0.77
+                    allow_stretch: True
+                    keep_ratio: False
+
+                Image:
+                    source: 'materiale/base_info_rosato.png'
+                    size_hint_y: 0.23
+                    allow_stretch: True
+                    keep_ratio: False
+
+            BoxLayout:
+                size_hint_y: 1.0
+                orientation: 'vertical'
+                spacing: 15
+                padding: 5
+
+                Label:
+                    size_hint_y: 0.1
+
+                # Nome vino rosato
+                BoxLayout:
+                    id: nome_rosato_box
+                    #orientation: 'horizontal'
+                    size_hint_y: 0.12
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Nome"
+                        size_hint_x: 0.3
+                    TextInput:
+                        id: nome_rosato
+                        font_size: 11
+                        font_name: 'materiale/comicbd.ttf'
+                        hint_text: "Nome del vino"
+                        multiline: False
+
+                # Produttore vino rosato
+                BoxLayout:
+                    id: produttore_rosato_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Produttore"
+                        size_hint_x: 0.3
+                        font_size: 13
+                    TextInput:
+                        id: produttore_rosato
+                        font_size: 11
+                        font_name: 'materiale/comicbd.ttf'
+                        hint_text: "Produttore del vino"
+                        multiline: False
+
+                # Annata vino rosato
+                BoxLayout:
+                    id: annata_rosato_box
+                    size_hint_y: 0.12
+                    #height: 35
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Annata"
+                        size_hint_x: 0.8
+                    TextInput:
+                        id: annata_rosato
+                        hint_text: "Anno del vino"
+                        font_size: 12
+                        font_name: 'materiale/comicbd.ttf'
+                        multiline: False
+
+                # Gradazione alcolica vino rosato
+                BoxLayout:
+                    id: gradazione_alcolica_rosato_box
+                    size_hint_y: 0.14
+                    #height: 35
+                    spacing: 5
+                    PinkWineLabel:
+                        text: "Vol."
+                        size_hint_x: 0.8
+                    #Label:
+                    #    size_hint_x: 0.8
+                    Spinner:
+                        id: alcol_rosato
+                        background_normal: ""
+                        #background_color: (1, 0.5, 0, 1)
+                        background_color: (0.7, 0.45, 0.6, 1.0)
+                        color: (1, 1, 1, 1)
+                        text: "Gradazione alcolica"
+                        font_name: 'materiale/comicbd.ttf'
+                        values: ["10", "10.5", "11", "11.5", "12", "12.5", "13", "13.5", "14", "14.5", "15", "15.5", "16", "16.5", "17", "17.5", "18"]
+                    #Label:
+                    #    size_hint_x: 0.4
+
+                Label:
+                    size_hint_y: 0.2
+
+            BoxLayout:
+                size_hint_y: None
+                height: 35
+                spacing: 15
+                padding: 3
+
+                NavigationButton:
+                    text: "Indietro"
+                    on_release: root.manager.current = 'conclusioni_rosato'
+
+                NavigationButton:
+                    id: nav_salva_rosato
+                    text: "Salva Scheda"
+                    on_release: app.show_confirm_popup('rosato', root)
+
+
+# ==============================================================================
+# 8a. RedArchiveScreen (name: 'archivio_rosso')
+# ==============================================================================
+<RedArchiveScreen>:
+    name: 'archivio_rosso'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 6
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 90
+                spacing: 6
+
+                Image:
+                    source: 'materiale/archivio_rossi_base.png'
+                    size_hint_y: 0.8
+                    allow_stretch: True
+                    keep_ratio: False
+
+            # SCROLLVIEW (Contenitore scorrevole)
+            ScrollView:
+                do_scroll_x: False
+
+                # GRIDLAYOUT (Contenitore dinamico delle schede)
+                GridLayout:
+                    id: archive_container
+                    cols: 1 # Una sola colonna
+                    spacing: dp(1)
+                    size_hint_y: None
+                    # Importante: l'altezza si adatta al numero di schede figlie
+                    height: self.minimum_height
+
+            Label:
+                size_hint_y: 0.1
+
+
+# ==============================================================================
+# 8b. WhiteArchiveScreen (name: 'archivio_bianco')
+# ==============================================================================
+<WhiteArchiveScreen>:
+    name: 'archivio_bianco'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 6
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 90
+                spacing: 6
+
+                Image:
+                    source: 'materiale/archivio_bianchi_base.png'
+                    size_hint_y: 0.8
+                    allow_stretch: True
+                    keep_ratio: False
+
+            # SCROLLVIEW (Contenitore scorrevole)
+            ScrollView:
+                do_scroll_x: False
+
+                # GRIDLAYOUT (Contenitore dinamico delle schede)
+                GridLayout:
+                    id: archive_container
+                    cols: 1 # Una sola colonna
+                    spacing: dp(1)
+                    size_hint_y: None
+                    # Importante: l'altezza si adatta al numero di schede figlie
+                    height: self.minimum_height
+
+            Label:
+                size_hint_y: 0.1
+
+
+# ==============================================================================
+# 8c. PinkArchiveScreen (name: 'archivio_rosato')
+# ==============================================================================
+<PinkArchiveScreen>:
+    name: 'archivio_rosato'
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'materiale/iniziale_background.png'
+
+        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+            size_hint: 1, 1
+
+            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            Label:
+                id: menu_anchor
+                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
+                size_hint: None, None
+                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
+                height: dp(1) # Altezza minima
+                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                pos_hint: {"right": 0.95, "top": 0.95}
+                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+
+            MenuButton:
+                on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 6
+            padding: 12, 52, 12, 12
+            size_hint: 1, 1
+            pos_hint: {"top": 1}
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: 90
+                spacing: 6
+
+                Image:
+                    source: 'materiale/archivio_rosati_base.png'
+                    size_hint_y: 0.8
+                    allow_stretch: True
+                    keep_ratio: False
+
+            # SCROLLVIEW (Contenitore scorrevole)
+            ScrollView:
+                do_scroll_x: False
+
+                # GRIDLAYOUT (Contenitore dinamico delle schede)
+                GridLayout:
+                    id: archive_container
+                    cols: 1 # Una sola colonna
+                    spacing: dp(1)
+                    size_hint_y: None
+                    # Importante: l'altezza si adatta al numero di schede figlie
+                    height: self.minimum_height
+
+            Label:
+                size_hint_y: 0.1
+
+#  Card vino rosso
+<RedWineCardItem>:
+    # Widget radice: GridLayout a 4 colonne per la riga della tabella
+    cols: 4
+    size_hint_y: None
+    height: dp(40) # Altezza sufficiente per le due righe di testo nella Colonna 1
+    padding: dp(2)
+    spacing: dp(2)
+
+    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
+    on_release: root.toggle_expand_red()
+
+    # Stile per la riga (opzionale, per distinguere le schede)
+    canvas.before:
+        Color:
+            # Se l'indice è PARI (resto 0) usa il rosso tenue altrimenti usa il colore più chiaro
+            rgba: (0.7, 0.45, 0.45, 1) if root.row_index % 2 == 0 else (0.8, 0.6, 0.6, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+    # =========================================================================
+    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
+    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # =========================================================================
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
+        padding: [0, dp(2), 0, dp(2)] # Padding verticale interno
+
+        # Linea 1: NOME VINO
+        Label:
+            text: root.wine_data.get('nome_rosso', 'N/D')
+            font_size: '13sp'
+            font_name: 'materiale/comicbd.ttf'
+            bold: True
+            halign: 'left'
+            valign: 'top'
+            text_size: self.width, self.height
+            size_hint_y: 0.65
+            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+
+        # Linea 2: PRODUTTORE
+        Label:
+            text: root.wine_data.get('produttore_rosso', 'N/D')
+            font_size: '11sp'
+            font_name: 'materiale/comicbd.ttf'
+            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            halign: 'left'
+            valign: 'bottom'
+            text_size: self.width, self.height
+            size_hint_y: 0.35
+
+    # =========================================================================
+    # COLONNA 2: Anno (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('annata_rosso', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.12 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('alcol_rosso', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.1 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('qualita_rosso', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.18 # 20% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+
+<WhiteWineCardItem>:
+    # Widget radice: GridLayout a 4 colonne per la riga della tabella
+    cols: 4
+    size_hint_y: None
+    height: dp(40) # Altezza sufficiente per le due righe di testo nella Colonna 1
+    padding: dp(2)
+    spacing: dp(2)
+
+    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
+    on_release: root.toggle_expand_white()
+
+    # Stile per la riga (opzionale, per distinguere le schede)
+    canvas.before:
+        Color:
+            # Se l'indice è PARI (resto 0) usa il Giallo/Oro più scuro altrimenti usa il Giallo/Oro più chiaro
+            rgba: (0.9, 0.85, 0.55, 1) if root.row_index % 2 == 0 else (0.95, 0.9, 0.75, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+    # =========================================================================
+    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
+    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # =========================================================================
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
+        padding: [0, dp(2), 0, dp(2)] # Padding verticale interno
+
+        # Linea 1: NOME VINO
+        Label:
+            text: root.wine_data.get('nome_bianco', 'N/D')
+            font_size: '13sp'
+            font_name: 'materiale/comicbd.ttf'
+            bold: True
+            halign: 'left'
+            valign: 'top'
+            text_size: self.width, self.height
+            size_hint_y: 0.65
+            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+
+        # Linea 2: PRODUTTORE
+        Label:
+            text: root.wine_data.get('produttore_bianco', 'N/D')
+            font_size: '11sp'
+            font_name: 'materiale/comicbd.ttf'
+            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            halign: 'left'
+            valign: 'bottom'
+            text_size: self.width, self.height
+            size_hint_y: 0.35
+
+    # =========================================================================
+    # COLONNA 2: Anno (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('annata_bianco', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.12 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('alcol_bianco', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.1 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('qualita_bianco', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.18 # 20% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+
+<PinkWineCardItem>:
+    # Widget radice: GridLayout a 4 colonne per la riga della tabella
+    cols: 4
+    size_hint_y: None
+    height: dp(40) # Altezza sufficiente per le due righe di testo nella Colonna 1
+    padding: dp(2)
+    spacing: dp(2)
+
+    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
+    on_release: root.toggle_expand_pink()
+
+    # Stile per la riga (opzionale, per distinguere le schede)
+    canvas.before:
+        Color:
+            # Se l'indice è PARI (resto 0) usa il Rosa Salmone Medio altrimenti usa il Rosa molto pallido
+            rgba: (0.9, 0.75, 0.75, 1) if root.row_index % 2 == 0 else (0.95, 0.85, 0.85, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+    # =========================================================================
+    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
+    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # =========================================================================
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
+        padding: [0, dp(2), 0, dp(2)] # Padding verticale interno
+
+        # Linea 1: NOME VINO
+        Label:
+            text: root.wine_data.get('nome_rosato', 'N/D')
+            font_size: '13sp'
+            font_name: 'materiale/comicbd.ttf'
+            bold: True
+            halign: 'left'
+            valign: 'top'
+            text_size: self.width, self.height
+            size_hint_y: 0.65
+            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+
+        # Linea 2: PRODUTTORE
+        Label:
+            text: root.wine_data.get('produttore_rosato', 'N/D')
+            font_size: '11sp'
+            font_name: 'materiale/comicbd.ttf'
+            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            halign: 'left'
+            valign: 'bottom'
+            text_size: self.width, self.height
+            size_hint_y: 0.35
+
+    # =========================================================================
+    # COLONNA 2: Anno (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('annata_rosato', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.12 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('alcol_rosato', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.1 # 15% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+    # =========================================================================
+    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # =========================================================================
+    Label:
+        text: root.wine_data.get('qualita_rosato', 'N/D')
+        font_size: '10sp'
+        font_name: 'materiale/comicbd.ttf'
+        bold: True
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.18 # 20% della larghezza
+        color: 0.12, 0.12, 0.12, 1 # Antracite
+
+# ---
+# Stile per le etichette di dato (da definire o riutilizzare)
+<WineDataLabel@Label>:
+    font_size: '10sp'
+    color: 0.3, 0.3, 0.3, 1
+    valign: 'top'
+    halign: 'left'
+    text_size: self.size
