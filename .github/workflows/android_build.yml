@@ -14,13 +14,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via CI Docker Image
+      - name: Build APK via Kivy Docker (Definitivo)
         run: |
-          # Usa un'immagine Docker CI stabile che risolve i problemi di interattività.
+          # Sostituisce la vecchia istanza di Buildozer con una nuova e forza il bypass di root.
           docker run \
-          --name buildozer_ci_runner \
+          --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          bochecha/kivy-buildozer-ci buildozer android release
+          -e 'BUILDOZER_ALLOW_ROOT=1' \
+          kivy/buildozer /bin/bash -c "pip uninstall -y buildozer && pip install buildozer && buildozer android release"
         
       - name: Decode Keystore
         run: |
