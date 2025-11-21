@@ -14,15 +14,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via Kivy Docker Image (Variabile Ambiente)
+      - name: Build APK via CI Docker Image
         run: |
-          # Bypassa il prompt interattivo di root e compila l'APK.
+          # Usa un'immagine Docker CI stabile che risolve i problemi di interattività.
           docker run \
-          --name buildozer_runner \
+          --name buildozer_ci_runner \
           -v $(pwd):/home/user/hostpython/ \
-          -e 'BUILDOZER_PREFIX=/home/user' \
-          -e 'BUILDOZER_ALLOW_ROOT=1' \
-          kivy/buildozer /bin/bash -c "pip install buildozer --upgrade && buildozer android release"
+          bochecha/kivy-buildozer-ci buildozer android release
         
       - name: Decode Keystore
         run: |
