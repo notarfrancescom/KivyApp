@@ -21,16 +21,25 @@ jobs:
 
       - name: Install Buildozer and Dependencies
         run: |
-          # Installazione di buildozer e della dipendenza mancante Cython
           pip install buildozer cython 
-          
-          # Installazione delle dipendenze di base del compilatore
           sudo apt update
           sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config
 
+      - name: Accept Android Licenses & Install Tools
+        run: |
+          # Configura la variabile d'ambiente SDK, essenziale per sdkmanager
+          export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+          
+          # 1. Accetta le licenze (risolve l'errore "Accept? (y/N)")
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # 2. Installazione forzata di build-tools e platform-tools (risolve l'errore Aidl)
+          # Utilizzo di una versione stabile di build-tools che è comunemente richiesta
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;34.0.0" || true
+          
       - name: Compile APK via Buildozer
         run: |
-          # buildozer procederà con il download di SDK e NDK
+          # Buildozer dovrebbe ora trovare tutti i toolchain e le licenze.
           buildozer android release 
         
       - name: Decode Keystore
