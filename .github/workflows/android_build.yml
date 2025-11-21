@@ -20,15 +20,14 @@ jobs:
         run: pip install buildozer
 
       # Passaggio 3: Compila l'APK all'interno del container Docker ufficiale
-      - name: Build APK via Kivy Docker Image (Force Yes)
+      - name: Build APK via Kivy Docker Image
         run: |
-          # Esegue il comando Buildozer incapsulato con 'yes y |', che risponde 'y'
+          # Esegue Buildozer all'interno dell'immagine Docker ufficiale
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          kivy/buildozer sh -c "yes y | buildozer android release" 
-          # NB: Ho rimosso l'opzione -i e --skip-root-check, poiché 'yes' le rende superflue
+          kivy/buildozer buildozer android release
         
       # Passaggio 4: Decodifica e salva il Keystore
       - name: Decode Keystore
