@@ -16,14 +16,15 @@ jobs:
       
       - name: Build and Run Custom Docker Image
         run: |
-          # 1. Costruisce l'immagine Docker locale usando il Dockerfile (che imposta BUILDOZER_ALLOW_ROOT=1)
+          # 1. Costruisce l'immagine Docker locale usando il Dockerfile
           docker build -t kivy-builder-local .
           
-          # 2. Esegue l'immagine locale per compilare l'APK
+          # 2. Esegue l'immagine locale chiamando l'entrypoint Python del Buildozer.
+          # Questo bypassa lo script wrapper problematico della vecchia versione.
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          kivy-builder-local buildozer android release
+          kivy-builder-local python -m buildozer android release # <--- MODIFICA CRUCIALE
         
       - name: Decode Keystore
         run: |
