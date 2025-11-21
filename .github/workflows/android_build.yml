@@ -16,13 +16,12 @@ jobs:
       
       - name: Build APK via Kivy Docker Image (Variabile Ambiente)
         run: |
-          # Questo comando bypassa il prompt interattivo di root tramite variabile d'ambiente,
-          # installa l'ultima versione di Buildozer e compila l'APK.
+          # Bypassa il prompt interattivo di root e compila l'APK.
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          -e 'BUILDOZER_ALLOW_ROOT=1' \ # <--- AGGIUNTA CRUCIALE
+          -e 'BUILDOZER_ALLOW_ROOT=1' \
           kivy/buildozer /bin/bash -c "pip install buildozer --upgrade && buildozer android release"
         
       - name: Decode Keystore
