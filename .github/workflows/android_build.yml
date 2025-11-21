@@ -24,8 +24,8 @@ jobs:
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
           -e 'BUILDOZER_PREFIX=/home/user' \
-          kivy/buildozer buildozer android release
-        
+          kivy/buildozer buildozer android release --skip-root-check # <--- AGGIUNTA
+
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
