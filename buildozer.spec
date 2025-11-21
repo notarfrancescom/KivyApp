@@ -65,4 +65,7 @@ log_level = 2
 warn_on_root = 0
 
 # (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
-p4a.branch = 2023.09.28
+p4a.branch = develop
+
+# (str) FORZA L'USO DELLA FORK UFFICIALE DI KIVY CON LA PATCH DI FIX
+p4a.url = https://github.com/kivy/python-for-androida
