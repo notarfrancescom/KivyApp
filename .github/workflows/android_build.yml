@@ -1,4 +1,4 @@
-name: Android CI Buildozer
+name: Android CI Buildozer Stable
 
 on:
   push:
@@ -14,25 +14,39 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build with Buildozer
-        uses: xavier-thomas/buildozer-action@master
-        id: buildozer
-        
+      - name: Install Buildozer (Local)
+        run: pip install buildozer
 
+      - name: Build APK via Kivy Docker Image
+        run: |
+          # Esegui Buildozer all'interno di un container con gli strumenti Kivy pre-installati
+          # Nota: 'bigharsh/buildozer_release' è un'immagine Docker nota per funzionare
+          docker run \
+          --name buildozer_runner \
+          -v $(pwd):/home/user/hostpython/ \
+          -e 'BUILDOZER_PREFIX=/home/user' \
+          bigharsh/buildozer_release buildozer android release
+        
+      # Passaggio di firma
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       - name: Sign APK
         run: |
+          # Trova l'APK di release appena creato (es. myapp-release.apk)
+          APK_PATH=$(find ./bin -name "*-release.apk" -print -quit)
+          
+          # Firma l'APK usando i segreti di GitHub
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
           -keystore android.keystore \
           -storepass ${{ secrets.KEYSTORE_PASS }} \
-          "${{ steps.buildozer.outputs.filename }}" ${{ secrets.KEY_ALIAS }} \
+          $APK_PATH ${{ secrets.KEY_ALIAS }} \
           -keypass ${{ secrets.KEY_PASS }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          path: ${{ steps.buildozer.outputs.filename }}
+          # Carica qualsiasi APK firmato presente nella cartella bin/
+          path: ./bin/*.apk
