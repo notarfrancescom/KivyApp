@@ -14,13 +14,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Build APK via Kivy Docker (Forzatura Configurazione)
+      - name: Build APK via Kivy Docker (Forzatura Input Shell)
         run: |
-          # Bypassa il prompt interattivo forzando warn_on_root=0 tramite alias in linea.
+          # Esegue una shell che reindirizza 'y' (yes) a Buildozer, risolvendo l'EOFError.
           docker run \
           --name buildozer_runner \
           -v $(pwd):/home/user/hostpython/ \
-          kivy/buildozer buildozer --alias:buildozer.warn_on_root=0 android release
+          kivy/buildozer sh -c "yes | buildozer android release" # <--- IL COMANDO FINALE
         
       - name: Decode Keystore
         run: |
