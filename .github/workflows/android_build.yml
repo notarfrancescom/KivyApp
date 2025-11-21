@@ -1,0 +1,41 @@
+name: Android CI Buildozer
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1.5
+        id: buildozer
+        with:
+          python-version: '3.10' 
+          ndk-api: 24 
+          ndk-version: '25b' 
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      - name: Sign APK
+        run: |
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore android.keystore \
+          -storepass ${{ secrets.KEYSTORE_PASS }} \
+          "${{ steps.buildozer.outputs.filename }}" ${{ secrets.KEY_ALIAS }} \
+          -keypass ${{ secrets.KEY_PASS }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ${{ steps.buildozer.outputs.filename }}
