@@ -23,12 +23,19 @@ jobs:
         run: |
           pip install buildozer cython 
           sudo apt update
-          # Installazione di tutte le dipendenze di base + libtool e m4 per autoreconf
+          # Include libtool e m4 per prevenire l'errore autoreconf su nuovi download
           sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config libtool m4
 
       - name: Compile APK via Buildozer (Accettazione Licenze Forzata)
         run: |
-          # Forziamo l'input 'y' per Buildozer, SDK, NDK, e tutte le interazioni
+          # --- NUOVI COMANDI DI PULIZIA ---
+          # Rimuove i sorgenti nativi potenzialmente corrotti o mal configurati
+          rm -rf /home/runner/.buildozer/android/packages
+          # Pulizia generale dei build precedenti
+          buildozer clean
+          # ---------------------------------
+          
+          # Esecuzione del build con accettazione automatica di tutte le interazioni
           yes | buildozer android release 
         
       - name: Decode Keystore
