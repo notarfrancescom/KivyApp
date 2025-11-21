@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Build with Buildozer
-        uses: inclement/buildozer-action@v1
+        uses: xavier-thomas/buildozer-action@master
         id: buildozer
         
 
