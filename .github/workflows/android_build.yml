@@ -1,4 +1,4 @@
-name: Android CI Buildozer Stable
+name: Android CI Buildozer Docker
 
 on:
   push:
@@ -14,27 +14,32 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: Setup Python Environment
-        uses: actions/setup-python@v5
+      # Step 1: Decodifica Keystore (deve essere disponibile prima di Buildozer)
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      # Step 2: Utilizza l'azione Buildozer Docker
+      - name: Compile APK via Buildozer (Docker)
+        # Questa azione gestisce la toolchain, l'NDK, le dipendenze Linux e la cache in un ambiente stabile
+        uses: ArtemSBulgakov/buildozer-action@v1.4
+        id: buildozer
         with:
-          python-version: '3.11'
+          # Il comando da eseguire all'interno del container
+          command: buildozer android release
 
-      - name: Install Buildozer and Dependencies
-        run: |
-          # Installa Buildozer, Cython e le dipendenze di base per la compilazione incrociata.
-          pip install buildozer cython 
-          sudo apt update
-          # Include libtool e m4 per prevenire l'errore autoreconf/LT_SYS_SYMBOL_USCORE
-          sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config libtool m4
+      # Step 3: Firma e Upload
+      # NOTA: Buildozer Action v1.4 dovrebbe già aver firmato l'APK
+      # se il keystore è nella cartella radice come android.keystore. 
+      # Se fallisce la firma, riattiveremo jarsigner.
 
-      - name: Compile APK via Buildozer (Pulizia Totale e Build)
-        run: |
-          # 1. Pulizia Forzata: Rimuove TUTTA la cache del toolchain, inclusi i sorgenti nativi corrotti, 
-          # per forzare Buildozer a scaricare e configurare l'ambiente da zero (usando il p4a.branch=develop).
-          rm -rf /home/runner/.buildozer/android
-          
-          # 2. Compilazione: Utilizza 'yes |' per rispondere 'y' a tutte le richieste 
-          # di licenza e interazione durante il processo di build.
+      - name: Rename and Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          # Il percorso standard per l'APK generato da Buildozer
+          path: bin/*.apk          # di licenza e interazione durante il processo di build.
           yes | buildozer android release 
         
       - name: Decode Keystore
