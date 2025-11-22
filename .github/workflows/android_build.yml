@@ -19,12 +19,13 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      # Step 2: Utilizza l'azione Buildozer Docker aggiornata
+      # Step 2: Utilizza l'azione Buildozer Docker aggiornata e fissa i permessi
       - name: Compile APK via Buildozer (Docker)
-        uses: ArtemSBulgakov/buildozer-action@v1 # VERSIONE CORRETTA
+        uses: ArtemSBulgakov/buildozer-action@v1 
         id: buildozer
         with:
           command: buildozer android release
+          container_user: root # RISOLVE L'ERRORE DI PERMESSI 'chown: invalid user'
 
       # Step 3: Firma e Upload
       - name: Rename and Upload APK
@@ -32,6 +33,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          # Il percorso standard per l'APK generato da Buildozer
           path: bin/*.apk
           
