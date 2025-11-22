@@ -39,33 +39,5 @@ jobs:
         with:
           name: my-app-apk-release
           # Il percorso standard per l'APK generato da Buildozer
-          path: bin/*.apk          # di licenza e interazione durante il processo di build.
-          yes | buildozer android release 
-        
-      - name: Decode Keystore
-        if: success()
-        run: |
-          # Decodifica il keystore segreto da Base64 nel file locale.
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
-
-      - name: Sign APK
-        if: success()
-        run: |
-          # Trova l'APK non firmato generato.
-          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+          path: bin/*.apk
           
-          # Firma l'APK con il keystore e le password segrete.
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
-          -keystore android.keystore \
-          -storepass ${{ secrets.KEYSTORE_PASS }} \
-          $APK_PATH ${{ secrets.KEY_ALIAS }} \
-          -keypass ${{ secrets.KEY_PASS }}
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-app-apk-release
-          # Carica il file APK firmato (di solito è l'unico file .apk in ./bin dopo la firma, 
-          # ma a volte è meglio specificare il nome se si conosce).
-          path: ./bin/*.apk
