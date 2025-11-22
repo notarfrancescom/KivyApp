@@ -1,4 +1,4 @@
-name: Android CI Buildozer Docker
+name: Android CI Buildozer Stable
 
 on:
   push:
@@ -14,25 +14,49 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      # Step 1: Decodifica Keystore (deve essere disponibile prima di Buildozer)
-      - name: Decode Keystore
+      - name: Setup Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Allineato al buildozer.spec
+
+      - name: Install Buildozer and Dependencies
         run: |
+          # Installazione di tutti i tool necessari, inclusi libtool e m4 (per autoreconf fix)
+          pip install buildozer cython 
+          sudo apt update
+          sudo apt install -y build-essential python3-pip git wget zip unzip zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev pkg-config libtool m4
+
+      - name: Compile APK via Buildozer (Pulizia Totale e Build)
+        run: |
+          # 1. Pulizia Forzata: Rimuove l'intera cache del toolchain per garantire 
+          # che le nuove impostazioni (p4a.branch=develop) vengano usate.
+          rm -rf /home/runner/.buildozer/android
+          
+          # 2. Compilazione
+          yes | buildozer android release
+        
+      - name: Decode Keystore
+        if: success()
+        run: |
+          # Decodifica il keystore segreto da Base64 nel file locale.
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      - name: Compile APK via Buildozer (Docker)
-        # Passiamo alla branch master, che spesso include i fix più recenti
-        uses: ArtemSBulgakov/buildozer-action@master 
-        id: buildozer
-        with:
-          command: buildozer android release
-          # Riprova container_user, se la master lo supporta
-          container_user: root 
+      - name: Sign APK
+        if: success()
+        run: |
+          # Trova l'APK non firmato
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+          
+          # Firma l'APK
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore android.keystore \
+          -storepass ${{ secrets.KEYSTORE_PASS }} \
+          $APK_PATH ${{ secrets.KEY_ALIAS }} \
+          -keypass ${{ secrets.KEY_PASS }}
 
-      # Step 3: Firma e Upload
-      - name: Rename and Upload APK
+      - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          path: bin/*.apk
-          
+          path: ./bin/*.apk
