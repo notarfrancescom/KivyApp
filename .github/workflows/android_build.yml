@@ -19,20 +19,14 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      # Step 2: Utilizza l'azione Buildozer Docker
+      # Step 2: Utilizza l'azione Buildozer Docker aggiornata
       - name: Compile APK via Buildozer (Docker)
-        # Questa azione gestisce la toolchain, l'NDK, le dipendenze Linux e la cache in un ambiente stabile
-        uses: ArtemSBulgakov/buildozer-action@v1.4
+        uses: ArtemSBulgakov/buildozer-action@v1 # VERSIONE CORRETTA
         id: buildozer
         with:
-          # Il comando da eseguire all'interno del container
           command: buildozer android release
 
       # Step 3: Firma e Upload
-      # NOTA: Buildozer Action v1.4 dovrebbe già aver firmato l'APK
-      # se il keystore è nella cartella radice come android.keystore. 
-      # Se fallisce la firma, riattiveremo jarsigner.
-
       - name: Rename and Upload APK
         if: success()
         uses: actions/upload-artifact@v4
