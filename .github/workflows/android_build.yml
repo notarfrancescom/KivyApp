@@ -28,10 +28,9 @@ jobs:
           
       - name: Buildozer Initial Setup and Libffi Patch
         run: |
-          # 1. Pulizia e Setup Iniziale (non avvia il build, solo il download della toolchain)
+          # 1. Pulizia e Setup Iniziale (forza accettazione licenza e download toolchain)
           rm -rf /home/runner/.buildozer/android
-          buildozer android update # Forza solo il download di p4a e delle ricette
-          
+          yes | buildozer android update # <--- CORRETTO          
           # 2. PATCH DEL BUG LT_SYS_SYMBOL_USCORE (Il vero Fix)
           # Ora il file 'acinclude.m4' esiste e può essere patchato.
           echo "Applicazione della patch per libffi/autoreconf..."
