@@ -22,7 +22,7 @@ version = 0.1
 requirements = python3,kivy
 
 # (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.9  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
+python.version = 3.8  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
 
 # (list) Supported orientations
 orientation = portrait
@@ -38,13 +38,13 @@ fullscreen = 1
 android.permissions = android.permission.INTERNET
 
 # (int) Target Android API, dovrebbe essere il più alto possibile.
-android.api = 31
+android.api = 27
 
 # (int) Minimum API your APK / AAB will support.
 android.minapi = 21
 
 # (str) Android NDK version to use
-android.ndk = 23b
+android.ndk = 21b
 
 # (int) Android NDK API to use. Deve corrispondere a android.minapi.
 android.ndk_api = 21
