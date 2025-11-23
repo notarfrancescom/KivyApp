@@ -19,7 +19,8 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-            - name: Run Buildozer Command inside Official Container
+      # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE (INDENTAZIONE CORRETTA)
+      - name: Run Buildozer Command inside Official Container
         run: |
           docker run \
             --rm \
@@ -27,7 +28,6 @@ jobs:
             -w /home/user/app \
             kivy/buildozer:latest \ 
             buildozer android release 
-
 
       # Step 3: Firma l'APK
       - name: Find and Sign APK
