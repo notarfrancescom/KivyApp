@@ -19,10 +19,10 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # (list) Application requirements
-requirements = python3,kivy
+requirements = python3,kivy==2.2.1
 
 # (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.11  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
+python.version = 3.10  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
 
 # (list) Supported orientations
 orientation = portrait
@@ -44,7 +44,7 @@ android.api = 33
 android.minapi = 21
 
 # (str) Android NDK version to use
-android.ndk = 25b
+android.ndk = 23b
 
 # (int) Android NDK API to use. Deve corrispondere a android.minapi.
 android.ndk_api = 21
