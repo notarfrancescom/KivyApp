@@ -51,8 +51,10 @@ jobs:
       - name: Compile APK via Buildozer (Release Finale - DEBUG)
         env:
           ANDROIDNDK: 23b 
+          # Variabile per forzare la compilazione su un singolo thread e risolvere i crash CI.
+          P4A_COMPILE_ENDIAN_SINGLE: 1 
         run: |
-          # Forziamo il log_level a 2 per catturare il crash di compilazione.
+          # Eseguiamo il build release completo
           yes | buildozer --log-level 2 android release 
 
       # --- FIRMA APK ---
