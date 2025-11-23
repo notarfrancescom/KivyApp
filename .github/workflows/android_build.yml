@@ -22,10 +22,9 @@ jobs:
       # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE
       - name: Run Buildozer Command inside Official Container
         run: |
-          # Rimuoviamo l'eseguibile 'buildozer' dalla riga finale,
-          # supponendo che sia l'Entrypoint predefinito del container.
-          docker run --rm -v ${{ github.workspace }}:/home/user/app -w /home/user/app kivy/buildozer:latest android release
-
+          # Esegue 'sdkmanager --licenses' e accetta tutto automaticamente (yes |)
+          # e poi esegue Buildozer solo se l'accettazione è riuscita.
+          docker run --rm -v ${{ github.workspace }}:/home/user/app -w /home/user/app kivy/buildozer:latest /bin/bash -c "yes | sdkmanager --licenses && buildozer android release"
       # Step 3: Firma l'APK
       - name: Find and Sign APK
         run: |
