@@ -25,19 +25,28 @@ jobs:
           sudo apt update
           # Installazione dei tool necessari per la compilazione native
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
+          
       - name: Buildozer Initial Setup and Libffi Patch
         run: |
-          # 1. Pulizia Forzata: Rimuove l'intera cache
+          # 1. Pulizia e Setup Iniziale (non avvia il build, solo il download della toolchain)
           rm -rf /home/runner/.buildozer/android
+          buildozer android update # Forza solo il download di p4a e delle ricette
           
-          # 2. Setup Buildozer (forza l'accettazione della licenza)
-          yes | buildozer android debug # <--- AGGIUNTO yes |
-          
-          # 3. PATCH DEL BUG LT_SYS_SYMBOL_USCORE (Il vero Fix)
-          # Questa patch commenta la riga problematica nel file di configurazione di libffi.
+          # 2. PATCH DEL BUG LT_SYS_SYMBOL_USCORE (Il vero Fix)
+          # Ora il file 'acinclude.m4' esiste e può essere patchato.
           echo "Applicazione della patch per libffi/autoreconf..."
-          sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' /home/runner/.buildozer/android/platform/build-hacks/libffi/acinclude.m4
-          echo "Patch applicata."
+          # Usiamo find per trovare la directory 'build-hacks' in modo dinamico per maggiore robustezza
+          HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
+          
+          # Esegui la patch solo se la directory è stata trovata
+          if [ -d "$HACKS_DIR" ]; then
+             sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
+             echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
+          else
+             echo "ATTENZIONE: Directory build-hacks non trovata. Il build potrebbe fallire."
+             exit 1 # Fallisci esplicitamente se non possiamo applicare la patch
+          fi
+
 
       - name: Compile APK via Buildozer (Release Finale)
         run: |
