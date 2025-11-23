@@ -1,4 +1,4 @@
-name: Android CI Buildozer Docker (Ufficiale)
+name: Android CI Buildozer Stable (Final Attempt)
 
 on:
   push:
@@ -14,27 +14,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       
-      # Step 1: Crea il Keystore (obbligatorio per la firma)
+      # Step 1: Crea il Keystore
       - name: Create Keystore
         run: |
+          # Decodifica il keystore segreto da Base64 nel file locale.
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      # Step 2: Utilizza l'azione Kivy/Buildozer più affidabile basata su Docker
-      - name: Compile and Deploy (Official Action)
-        uses: xndr-ru/buildozer-deploy@v2 # <--- AZIONE ROBUSTA
+      # Step 2: Utilizza l'azione Kivy/Buildozer ufficiale
+      # Questa azione è mantenuta dal team Kivy ed è la più stabile per superare i problemi di toolchain.
+      - name: Run Buildozer Docker Build
+        uses: kivy-actions/buildozer@master 
         with:
-          # Comando per il build release
-          buildozer_command: 'android release'
-          # Parametri necessari per la firma dell'APK
-          keystore_path: android.keystore
+          # Il comando Buildozer
+          command: buildozer android release
+          # Parametri di firma (il keystore deve essere già presente nella root)
           key_alias: ${{ secrets.KEY_ALIAS }}
           key_store_password: ${{ secrets.KEYSTORE_PASS }}
           key_password: ${{ secrets.KEY_PASS }}
-
+          
       # Step 3: Upload dell'Artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release-signed
-          # L'APK firmato è disponibile in questa cartella con questa azione
+          # Percorso standard per l'APK generato
           path: bin/*.apk
+          
