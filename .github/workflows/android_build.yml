@@ -50,12 +50,12 @@ jobs:
 
       - name: Compile APK via Buildozer (Release Finale - DEBUG)
         env:
-          ANDROIDNDK: 23b 
+          ANDROIDNDK: 21b 
           # Variabile per forzare la compilazione su un singolo thread e risolvere i crash CI.
           P4A_COMPILE_ENDIAN_SINGLE: 1 
         run: |
           # Eseguiamo il build release completo
-          yes | buildozer --log-level 2 android release 
+          yes | buildozer android release 
 
       # --- FIRMA APK ---
       - name: Decode Keystore
