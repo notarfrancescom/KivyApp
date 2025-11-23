@@ -48,14 +48,13 @@ jobs:
           fi
 
 
-      - name: Compile APK via Buildozer (Release Finale)
+      - name: Compile APK via Buildozer (Release Finale - DEBUG)
         env:
-          # Forziamo NDK 23b come variabile d'ambiente per massima stabilità (anche se è nel buildozer.spec)
           ANDROIDNDK: 23b 
         run: |
-          # Eseguiamo il build release completo
-          yes | buildozer android release
-        
+          # Forziamo il log_level a 2 per catturare il crash di compilazione.
+          yes | buildozer --log-level 2 android release 
+
       # --- FIRMA APK ---
       - name: Decode Keystore
         if: success()
