@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # CAMBIATO a Ubuntu 22.04 per maggiore stabilità NDK
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Allineato al buildozer.spec
+          python-version: '3.11'
 
       - name: Install Buildozer and Dependencies
         run: |
@@ -30,31 +30,32 @@ jobs:
         run: |
           # 1. Pulizia e Setup Iniziale (forza accettazione licenza e download toolchain)
           rm -rf /home/runner/.buildozer/android
-          yes | buildozer android update # <--- CORRETTO          
+          yes | buildozer android update
+          
           # 2. PATCH DEL BUG LT_SYS_SYMBOL_USCORE (Il vero Fix)
-          # Ora il file 'acinclude.m4' esiste e può essere patchato.
           echo "Applicazione della patch per libffi/autoreconf..."
           # Usiamo find per trovare la directory 'build-hacks' in modo dinamico per maggiore robustezza
           HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
           
           # Esegui la patch solo se la directory è stata trovata
           if [ -d "$HACKS_DIR" ]; then
+             # La patch è stata applicata
              sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
              echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
           else
              echo "ATTENZIONE: Directory build-hacks non trovata. Il build potrebbe fallire."
-             exit 1 # Fallisci esplicitamente se non possiamo applicare la patch
+             exit 1 
           fi
 
 
       - name: Compile APK via Buildozer (Release Finale)
         env:
-          # Forza l'utilizzo della versione NDK 23b, che è storicamente la più stabile.
-          ANDROIDNDK: 23b
+          # Forziamo NDK 23b come variabile d'ambiente per massima stabilità (anche se è nel buildozer.spec)
+          ANDROIDNDK: 23b 
         run: |
-          # Eseguiamo il build release completo, che ora userà i file patchati
+          # Eseguiamo il build release completo
           yes | buildozer android release
-       
+        
       # --- FIRMA APK ---
       - name: Decode Keystore
         if: success()
