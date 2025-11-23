@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10' # Allineato al buildozer.spec
-
+ 
       - name: Install Buildozer and Dependencies
         run: |
           # Installazione di tutti i tool necessari, inclusi libtool e m4 (per autoreconf fix)
