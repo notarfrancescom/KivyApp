@@ -38,7 +38,7 @@ fullscreen = 1
 android.permissions = android.permission.INTERNET
 
 # (int) Target Android API, dovrebbe essere il più alto possibile.
-android.api = 33
+android.api = 31
 
 # (int) Minimum API your APK / AAB will support.
 android.minapi = 21
