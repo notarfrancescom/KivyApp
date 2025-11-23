@@ -48,10 +48,13 @@ jobs:
 
 
       - name: Compile APK via Buildozer (Release Finale)
+        env:
+          # Forza l'utilizzo della versione NDK 23b, che è storicamente la più stabile.
+          ANDROIDNDK: 23b
         run: |
           # Eseguiamo il build release completo, che ora userà i file patchati
           yes | buildozer android release
-        
+       
       # --- FIRMA APK ---
       - name: Decode Keystore
         if: success()
