@@ -1,4 +1,4 @@
-name: Android CI Buildozer Stable (Final Attempt)
+name: Android CI Docker Direct
 
 on:
   push:
@@ -17,26 +17,48 @@ jobs:
       # Step 1: Crea il Keystore
       - name: Create Keystore
         run: |
-          # Decodifica il keystore segreto da Base64 nel file locale.
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      # Step 2: Utilizza l'azione Kivy/Buildozer ufficiale
-      # Questa azione è mantenuta dal team Kivy ed è la più stabile per superare i problemi di toolchain.
-      - name: Run Buildozer Docker Build
-        uses: kivy-actions/buildozer@master 
+      # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE
+      # Questo bypassa il problema "repository not found" e l'errore LT_SYS_SYMBOL_USCORE
+      - name: Run Buildozer via Docker Hub Image
+        uses: docker/build-push-action@v5 # Usiamo un'azione generica per eseguire l'immagine
         with:
-          # Il comando Buildozer
-          command: buildozer android release
-          # Parametri di firma (il keystore deve essere già presente nella root)
-          key_alias: ${{ secrets.KEY_ALIAS }}
-          key_store_password: ${{ secrets.KEYSTORE_PASS }}
-          key_password: ${{ secrets.KEY_PASS }}
+          context: .
+          push: false
+          tags: buildozer_app:latest
+          # Usiamo l'immagine Buildozer ufficiale
+          target: buildozer/buildozer:stable
+          build-args: |
+            NDK_VERSION=25b
+            ANDROID_API=33
+
+      - name: Run Buildozer Command inside Container
+        # Eseguiamo il comando di Buildozer nel container
+        run: |
+          # Usiamo il container Buildozer per eseguire il comando di compilazione
+          docker run \
+            -v ${{ github.workspace }}:/home/user/app \
+            -w /home/user/app \
+            ghcr.io/kivy/buildozer:stable \
+            buildozer android release 
+
+      # Step 3: Firma l'APK
+      # Questa parte è ancora necessaria perché il container Docker non firma automaticamente
+      - name: Find and Sign APK
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
           
-      # Step 3: Upload dell'Artifact
+          # Firma l'APK
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore android.keystore \
+          -storepass ${{ secrets.KEYSTORE_PASS }} \
+          $APK_PATH ${{ secrets.KEY_ALIAS }} \
+          -keypass ${{ secrets.KEY_PASS }}
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release-signed
-          # Percorso standard per l'APK generato
           path: bin/*.apk
           
