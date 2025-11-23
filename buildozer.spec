@@ -19,10 +19,10 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # (list) Application requirements
-requirements = python3,kivy==2.0.0
+requirements = python3,kivy
 
 # (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.9  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
+python.version = 3.11  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
 
 # (list) Supported orientations
 orientation = portrait
@@ -44,7 +44,7 @@ android.api = 33
 android.minapi = 21
 
 # (str) Android NDK version to use
-android.ndk = 21e
+android.ndk = 25b
 
 # (int) Android NDK API to use. Deve corrispondere a android.minapi.
 android.ndk_api = 21
@@ -65,7 +65,7 @@ log_level = 2
 warn_on_root = 0
 
 # (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
-p4a.branch = release
+# p4a.branch = release
 
 # (str) Aggiungiamo l'URL della fork nota per contenere i fix di build
-p4a.url = https://github.com/inclement/python-for-android
+# p4a.url = https://github.com/inclement/python-for-android
