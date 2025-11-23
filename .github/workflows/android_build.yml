@@ -1,4 +1,4 @@
-name: Android CI Docker Direct
+name: Android CI Docker Direct (Fix Finale)
 
 on:
   push:
@@ -20,33 +20,23 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE
-      # Questo bypassa il problema "repository not found" e l'errore LT_SYS_SYMBOL_USCORE
-      - name: Run Buildozer via Docker Hub Image
-        uses: docker/build-push-action@v5 # Usiamo un'azione generica per eseguire l'immagine
-        with:
-          context: .
-          push: false
-          tags: buildozer_app:latest
-          # Usiamo l'immagine Buildozer ufficiale
-          target: buildozer/buildozer:stable
-          build-args: |
-            NDK_VERSION=25b
-            ANDROID_API=33
-
-      - name: Run Buildozer Command inside Container
-        # Eseguiamo il comando di Buildozer nel container
+      # Questo usa direttamente 'docker run' senza l'azione build/push che falliva.
+      - name: Run Buildozer Command inside Official Container
+        # Usiamo l'immagine Buildozer stabile dal container registry di Kivy
         run: |
-          # Usiamo il container Buildozer per eseguire il comando di compilazione
           docker run \
+            --rm \
             -v ${{ github.workspace }}:/home/user/app \
             -w /home/user/app \
             ghcr.io/kivy/buildozer:stable \
             buildozer android release 
-
+            
       # Step 3: Firma l'APK
-      # Questa parte è ancora necessaria perché il container Docker non firma automaticamente
       - name: Find and Sign APK
         run: |
+          # Il buildozer.spec deve usare android.ndk=25b e i requisiti moderni
+          
+          # L'APK non firmato è ora nella cartella bin
           APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
           
           # Firma l'APK
