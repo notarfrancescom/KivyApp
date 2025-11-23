@@ -20,23 +20,19 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE
-      # Questo usa direttamente 'docker run' senza l'azione build/push che falliva.
       - name: Run Buildozer Command inside Official Container
-        # Usiamo l'immagine Buildozer stabile dal container registry di Kivy
         run: |
           docker run \
             --rm \
             -v ${{ github.workspace }}:/home/user/app \
             -w /home/user/app \
-            ghcr.io/kivy/buildozer:stable \
+            kivy/buildozer:latest \ # <--- NUOVA IMMAGINE: PIÙ STABILE E RAGGIUNGIBILE
             buildozer android release 
             
       # Step 3: Firma l'APK
       - name: Find and Sign APK
         run: |
-          # Il buildozer.spec deve usare android.ndk=25b e i requisiti moderni
-          
-          # L'APK non firmato è ora nella cartella bin
+          # La firma avverrà DOPO che il container ha generato il file -unsigned.apk
           APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
           
           # Firma l'APK
