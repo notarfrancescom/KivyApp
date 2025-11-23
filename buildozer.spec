@@ -67,5 +67,5 @@ warn_on_root = 0
 # (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
 p4a.branch = release
 
-# (str) FORZA L'USO DELLA FORK UFFICIALE DI KIVY CON LA PATCH DI FIX
-# p4a.url = https://github.com/kivy/python-for-androida
+# (str) Aggiungiamo l'URL della fork nota per contenere i fix di build
+p4a.url = https://github.com/inclement/python-for-android
