@@ -22,7 +22,7 @@ version = 0.1
 requirements = python3,kivy
 
 # (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.11  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
+python.version = 3.10  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
 
 # (list) Supported orientations
 orientation = portrait
