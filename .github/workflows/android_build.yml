@@ -19,12 +19,21 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
-      # Step 2: Esegui Buildozer usando l'immagine Docker UFFICIALE
+      # Step 2a: Accetta le licenze Android (usando un container generico per la shell)
+      - name: Accept Android SDK Licenses
+        run: |
+          docker run --rm \
+            -v /home/runner/.buildozer/android/platform/android-sdk:/opt/android-sdk \
+            ubuntu:latest /bin/bash -c "yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses"
+            
+      # Step 2b: Esegui Buildozer (usando l'immagine Kivy che ora avrà le licenze accettate)
       - name: Run Buildozer Command inside Official Container
         run: |
-          # Esegue 'sdkmanager --licenses' e accetta tutto automaticamente (yes |)
-          # e poi esegue Buildozer solo se l'accettazione è riuscita.
-          docker run --rm -v ${{ github.workspace }}:/home/user/app -w /home/user/app kivy/buildozer:latest /bin/bash -c "yes | sdkmanager --licenses && buildozer android release"
+          # NON USIAMO IL COMANDO BASH E NON ACCETTIAMO LICENZE QUI
+          # Usiamo il comando pulito che l'Entrypoint del container si aspetta.
+          docker run --rm -v ${{ github.workspace }}:/home/user/app -w /home/user/app kivy/buildozer:latest buildozer android release
+
+     
       # Step 3: Firma l'APK
       - name: Find and Sign APK
         run: |
