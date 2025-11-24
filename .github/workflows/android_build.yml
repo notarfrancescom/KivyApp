@@ -45,19 +45,22 @@ jobs:
           mkdir -p "$NDK_DIR"
 
           # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
-          echo "Forzatura della versione NDK e API in buildozer.spec e setting log_level=2..."
-          # Rimuove le righe vecchie se esistono (inclusi i commenti)
-          sed -i '/android.ndk=/d' buildozer.spec
-          sed -i '/android.ndk_path=/d' buildozer.spec
-          sed -i '/android.api=/d' buildozer.spec
-          sed -i '/log_level=/d' buildozer.spec
+          echo "Forzatura della versione NDK, API e log_level=2 in buildozer.spec..."
           
-          # Aggiunge i valori corretti nel file
+          # Rimuove TUTTE le righe che potrebbero contenere le configurazioni vecchie o duplicati
+          # Nota: Usiamo grep per eliminare le righe che contengono i nomi delle variabili
+          sed -i '/android.ndk/d' buildozer.spec
+          sed -i '/android.api/d' buildozer.spec
+          sed -i '/log_level/d' buildozer.spec 
+          
+          # Aggiunge i valori corretti nel file (li inseriamo in fondo, che è sicuro dopo la pulizia)
           echo "android.ndk = $NDK_VER" >> buildozer.spec
           echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
           echo "android.api = 28" >> buildozer.spec
           echo "log_level = 2" >> buildozer.spec
           
+          echo "buildozer.spec modificato con successo."
+
           # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
