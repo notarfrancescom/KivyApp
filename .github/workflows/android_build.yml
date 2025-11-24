@@ -35,7 +35,7 @@ jobs:
       - name: Manual Android SDK/NDK Setup (Final Attempt)
         id: android_setup
         env:
-          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza l'ambiente per il passo intero
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza l'ambiente per il passo
         run: |
           # 1. Definisci le directory (stesse usate da Buildozer)
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
@@ -60,17 +60,23 @@ jobs:
              exit 1
           fi
 
-          # 3. Soluzione DEFINITIVA: Crea manualmente il file di accettazione della licenza.
-          echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
+          # 3. SOLUZIONE FINALE: Crea manualmente tutti i file di licenza necessari.
+          echo "Creazione forzata di TUTTI i file di licenza per bypassare OGNI prompt..."
           mkdir -p "$SDK_DIR/licenses"
-          echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
-          echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
           
-          # 4. Installazione forzata dei pacchetti stabili necessari (INVOCAZIONE ESPLICITA DI JAVA 8)
-          # NOTA: Per eseguire sdkmanager con Java 8, dobbiamo passare l'eseguibile java come comando
-          # e sdkmanager come argomento del jar, ma sdkmanager è uno script wrapper.
-          # Semplifichiamo forzando JAVA_HOME nel passo. Se questo fallisce...
-          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Forza JDK 8 tramite JAVA_HOME)..."
+          # Hash delle licenze più comuni (SDK, Preview, Google APIs)
+          LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\n" # android-sdk-license
+          LICENSES_CONTENT+="d975f826639434f7480e1c2777176d7fae9a4f4d\n" # android-sdk-preview-license
+          LICENSES_CONTENT+="24333f8a63b6825ea9c5514f83c2829b004d1fee\n" # android-sdk-license (nuovo)
+          
+          # Scrivi tutte le licenze nel file principale
+          echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
+          
+          # Aggiungi l'hash di google-gapps (richiesta da Play services e Build-Tools)
+          echo "33b6a67a0746816094254b1e9564177d1a932d43" > "$SDK_DIR/licenses/google-gapps-license"
+          
+          # 4. Installazione forzata dei pacchetti stabili necessari
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 5. Scarica e Unzip l'NDK
