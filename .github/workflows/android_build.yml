@@ -100,32 +100,25 @@ jobs:
           
           # 6. Settaggio delle variabili d'ambiente per il passo successivo
           echo "Settaggio Variabili d'Ambiente NDK/SDK..."
+          # Il percorso finale dell'NDK installato è NDK_DIR/NDK_VER che è /home/runner/.buildozer/android/platform/android-ndk/25c
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
-          echo "NDK_HOME=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
+          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV # <--- Usa il path completo del NDK r25c
+          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
           # 7. Applicazione della patch Libffi/Autoreconf
           echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
+          # Passa qui le variabili NDK aggiornate per la patch!
           buildozer android update
-
-          echo "Applicazione della patch per libffi/autoreconf..."
-          HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
-          
-          if [ -d "$HACKS_DIR" ]; then
-             sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
-             echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
-          else
-             echo "ATTENZIONE: Directory build-hacks non trovata."
-             exit 1
-          fi
       
       - name: Compile APK via Buildozer (Release Finale)
         env:
-          JAVA_HOME: ${{ env.JAVA8_HOME }} # Assicura che Buildozer usi Java 8
+          JAVA_HOME: ${{ env.JAVA8_HOME }}
           ANDROID_API: 28 
-          ANDROIDNDK: 21b 
+          # AGGIORNA NDKNDK con il path completo e NDK_VER
+          ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
+          NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
           P4A_COMPILE_ENDIAN_SINGLE: 1 
           ANDROID_SDK_IGNORE_LICENSES: 1 
         run: |
