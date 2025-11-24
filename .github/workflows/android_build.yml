@@ -107,10 +107,12 @@ jobs:
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
-          # 7. Applicazione della patch Libffi/Autoreconf
-          echo "Esecuzione di buildozer clean per eliminare i metadati obsoleti..."
-          buildozer clean # <--- NUOVO COMANDO DI PULIZIA
-          
+          # 7. PULIZIA E APPLICAZIONE DELLA PATCH
+          echo "Pulizia manuale delle directory di compilazione obsolete..."
+          # Cancella le cartelle di build e dist. Questo ha lo stesso effetto di 'clean'.
+          rm -rf .buildozer/android/platform/build-*
+          rm -rf .buildozer/android/platform/dist-*
+
           echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
           buildozer android update
 
