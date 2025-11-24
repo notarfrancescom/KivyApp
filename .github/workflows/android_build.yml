@@ -30,37 +30,38 @@ jobs:
           echo "JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
           echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
 
-      - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - NDK Environment Override)
+      
+      - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - NDK Logger)
         id: android_setup
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
         run: |
           # 1. Definisci le directory e la versione NDK CORRETTA
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
-          export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
           export NDK_VER=25c 
-          export FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
+          # Path NDK COMPLETO: usiamo la convenzione android-ndk-rXX che p4a preferisce
+          export FINAL_NDK_FOLDER="/home/runner/.buildozer/android/platform/android-ndk-r${NDK_VER}"
+          
+          # PULIZIA AGGRESSIVA INIZIALE: Rimuove OGNI cartella NDK precedente o mal nominata
+          echo "Pulizia aggressiva di tutte le installazioni NDK precedenti e potenzialmente problematiche..."
+          rm -rf /home/runner/.buildozer/android/platform/android-ndk*
           
           mkdir -p "$SDK_DIR"
-          mkdir -p "$NDK_DIR"
 
           # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
           echo "Forzatura della versione NDK, API e log_level=2 in buildozer.spec..."
-          
           # Rimuove TUTTE le righe che potrebbero contenere le configurazioni vecchie o duplicati
-          # Nota: Usiamo grep per eliminare le righe che contengono i nomi delle variabili
           sed -i '/android.ndk/d' buildozer.spec
           sed -i '/android.api/d' buildozer.spec
           sed -i '/log_level/d' buildozer.spec 
           
-          # Aggiunge i valori corretti nel file (li inseriamo in fondo, che è sicuro dopo la pulizia)
+          # Aggiunge i valori corretti
           echo "android.ndk = $NDK_VER" >> buildozer.spec
           echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
           echo "android.api = 28" >> buildozer.spec
           echo "log_level = 2" >> buildozer.spec
-          
           echo "buildozer.spec modificato con successo."
-
+          
           # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
@@ -89,15 +90,16 @@ jobs:
           NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
           NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
           curl -L -f -o android-ndk.zip "$NDK_URL"
-          unzip -q android-ndk.zip -d "$NDK_DIR"
+          
+          # Unzip la cartella NDK r25c (che si chiama 'android-ndk-r25c') direttamente nella cartella platform.
+          # Questo assicura che il path diventi /home/runner/.buildozer/android/platform/android-ndk-r25c
+          unzip -q android-ndk.zip -d /home/runner/.buildozer/android/platform/
           rm android-ndk.zip
 
-          EXTRACTED_NDK_FOLDER="$NDK_DIR/android-ndk-r${NDK_VER}"
-          mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
           echo "NDK installato con successo in $FINAL_NDK_FOLDER"
           
           # 5. Settaggio delle variabili d'ambiente globali GITHUB_ENV
-          echo "Settaggio Variabili d'Ambiente NDK/SDK..."
+          echo "Settaggio Variabili d'Ambiente NDK/SDK (path NDK aggiornato)..."
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_API=28" >> $GITHUB_ENV
           echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
@@ -109,10 +111,6 @@ jobs:
           rm -rf .buildozer/android/platform/build-*
           rm -rf .buildozer/android/platform/dist-*
           
-          # ELIMINIAMO LA CARTELLA RESIDUA CHE CREA IL CONFLITTO NDK
-          echo "Eliminazione della cartella NDK obsoleta r21b..."
-          rm -rf /home/runner/.buildozer/android/platform/android-ndk-r21b
-          
           # *** COMANDO CRITICO: Pulizia della cache di python-for-android ***
           echo "Pulizia della cache python-for-android (~/.p4a)"
           rm -rf ~/.p4a 
@@ -121,6 +119,7 @@ jobs:
           
           # *** FORZATURA TOTALE DELL'AMBIENTE SUL COMANDO UPDATE ***
           ANDROID_NDK=$FINAL_NDK_FOLDER NDK_HOME=$FINAL_NDK_FOLDER buildozer android update
+
 
       - name: Patch Libffi and Finalize Setup
         if: success()
