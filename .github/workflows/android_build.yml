@@ -102,14 +102,13 @@ jobs:
           # 6. Settaggio delle variabili d'ambiente
           echo "Settaggio Variabili d'Ambiente NDK/SDK..."
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV # <--- Path NDK r25c
-          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV # <--- Path NDK r25c
+          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
           # 7. Applicazione della patch Libffi/Autoreconf
           echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
-          # L'update è necessario per creare la cartella 'build-hacks'
           buildozer android update
 
           echo "Applicazione della patch per libffi/autoreconf..."
@@ -128,4 +127,34 @@ jobs:
           JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per la compilazione
           ANDROID_API: 28 
           # FORZATURA MANUALE DEL PATH NDK PER SOVRASCRIVERE OGNI VARIABILE AMBIENTALE VECCHIA
-          ANDROID_NDK: /home/runner/.build
+          ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
+          NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
+          P4A_COMPILE_ENDIAN_SINGLE: 1 
+          ANDROID_SDK_IGNORE_LICENSES: 1 
+        run: |
+          buildozer android release
+        
+      - name: Decode Keystore
+        if: success()
+        run: | # <-- CORREZIONE YAML: questa riga è ora indentata correttamente
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      - name: Sign APK
+        if: success()
+        env:
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per jarsigner
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+          
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore android.keystore \
+          -storepass ${{ secrets.KEYSTORE_PASS }} \
+          $APK_PATH ${{ secrets.KEY_ALIAS }} \
+          -keypass ${{ secrets.KEY_PASS }}
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ./bin/*.apk
