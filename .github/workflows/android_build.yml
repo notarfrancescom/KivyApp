@@ -79,13 +79,40 @@ jobs:
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
-          # 5. Scarica e Unzip l'NDK
+          # 5. Scarica e Unzip l'NDK (Aggiunta verifica del download)
           echo "Download e installazione manuale di NDK $NDK_VER..."
-          wget -q https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip -O android-ndk.zip
+          NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
+          NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
+          
+          # Tentativo di download
+          wget -q "$NDK_URL" -O android-ndk.zip
+          
+          # Verifica che il file ZIP sia stato scaricato
+          if [ ! -f "android-ndk.zip" ] || [ ! -s "android-ndk.zip" ]; then
+             echo "ERRORE: Download NDK fallito o file vuoto. URL: $NDK_URL"
+             exit 1
+          fi
+
+          # Estrazione e spostamento
           unzip -q android-ndk.zip -d "$NDK_DIR"
-          mv "$NDK_DIR/android-ndk-r${NDK_VER}" "$NDK_DIR/$NDK_VER"
+          
+          # Rimuove il file ZIP per pulizia
+          rm android-ndk.zip
+
+          # Sposta la cartella estratta nella posizione corretta
+          EXTRACTED_NDK_FOLDER="$NDK_DIR/android-ndk-r${NDK_VER}"
+          FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
+          
+          if [ -d "$EXTRACTED_NDK_FOLDER" ]; then
+             mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
+             echo "NDK spostato in $FINAL_NDK_FOLDER"
+          else
+             echo "ERRORE CRITICO: La cartella NDK non è stata estratta correttamente in $EXTRACTED_NDK_FOLDER."
+             exit 1
+          fi
           
           # 6. Settaggio delle variabili d'ambiente per il passo successivo
+          echo "Settaggio Variabili d'Ambiente NDK/SDK..."
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_NDK=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
           echo "NDK_HOME=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
