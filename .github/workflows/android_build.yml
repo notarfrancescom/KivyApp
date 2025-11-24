@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    # Utilizza Ubuntu 22.04 LTS per maggiore stabilità con i vecchi NDK
+    # Utilizza Ubuntu 22.04 LTS per maggiore stabilità
     runs-on: ubuntu-22.04 
     steps:
       - name: Checkout Code
@@ -28,16 +28,14 @@ jobs:
           # Installazione dei tool necessari per la compilazione nativa
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
           
-      - name: Buildozer Setup, License, and Patch
+      - name: Manual Android SDK/NDK Setup and License Acceptance
         run: |
-          # 1. Pulizia Forzata
+          # 1. Pulizia Forzata e Setup Buildozer per scaricare NDK e p4a
           rm -rf /home/runner/.buildozer/android
-          
-          # 2. Setup Buildozer (Scarica NDK, SDK e p4a)
-          echo "Avvio setup Buildozer..."
+          echo "Avvio setup Buildozer per scaricare solo NDK/SDK base..."
           buildozer android update
-          
-          # 3. Trova il path dell'SDK Manager
+
+          # 2. Trova il path dell'SDK Manager
           SDK_TOOLS_BIN=$(find /home/runner/.buildozer/android/platform/android-sdk/ -name 'sdkmanager' -type f -print -quit)
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
@@ -45,15 +43,14 @@ jobs:
              exit 1
           fi
 
-          # 4. Accetta le Licenze e Installa TUTTI i pacchetti necessari
-          echo "Accettazione di tutte le licenze Android e installazione dei pacchetti essenziali..."
-          
-          # Tentiamo l'accettazione delle licenze di TUTTI i pacchetti principali
+          # 3. Tentativo di accettazione generica delle licenze
+          echo "Tentativo di accettazione generica di tutte le licenze Android..."
           yes | "$SDK_TOOLS_BIN" --licenses
 
-          # Ora installiamo i pacchetti essenziali necessari per la compilazione (API 27 e Build Tools 30.0.3)
-          # Questi non dovrebbero più chiedere la licenza dopo il comando precedente
-          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-27"
+          # 4. Installazione forzata dei pacchetti stabili necessari
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
+          # Usiamo API 28 e Build Tools 30.0.3 per bypassare il problema di licenza del 36.1.0
+          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
@@ -67,7 +64,8 @@ jobs:
              exit 1
           fi
 
-
+      # ----------------------------------------------------------------------
+      
       - name: Compile APK via Buildozer (Release Finale)
         env:
           # Forziamo NDK 21b e la compilazione su singolo thread per evitare crash
@@ -78,7 +76,7 @@ jobs:
           yes | buildozer android release
         
       # ----------------------------------------------------------------------
-      # --- FIRMA APK (Non modificare se le Secrets sono configurate) ---
+      # --- FIRMA APK ---
       # ----------------------------------------------------------------------
       - name: Decode Keystore
         if: success()
@@ -102,4 +100,3 @@ jobs:
         with:
           name: my-app-apk-release
           path: ./bin/*.apk
-          
