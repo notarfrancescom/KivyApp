@@ -36,33 +36,35 @@ jobs:
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
-          # 2. Scarica e Unzip l'SDK Command Line Tools più vecchi e stabili
-          # Non ci affidiamo al setup di Buildozer, facciamo tutto da noi.
+          # 2. Scarica e Unzip l'SDK Command Line Tools
           echo "Download e installazione manuale dell'SDK Command Line Tools..."
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip -O android-cmdline.zip
           unzip -q android-cmdline.zip -d "$SDK_DIR"
-          mv "$SDK_DIR/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+          
+          # CORREZIONE: Sposta la cartella estratta 'cmdline-tools' nel formato richiesto
+          # Nota: Lo zip estrae una cartella chiamata 'cmdline-tools' che contiene i binari.
+          # Lo spostiamo in $SDK_DIR/cmdline-tools/latest/
+          mkdir -p "$SDK_DIR/cmdline-tools"
+          mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest"
           
           export SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
-             echo "ERRORE: sdkmanager non trovato."
+             echo "ERRORE: sdkmanager non trovato. Path cercato: $SDK_TOOLS_BIN"
              exit 1
           fi
 
           # 3. Soluzione DEFINITIVA: Crea manualmente il file di accettazione della licenza.
-          # Questo bypassa OGNI prompt 'Accept? (y/N):'
           echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
           mkdir -p "$SDK_DIR/licenses"
           echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
           echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
           
           # 4. Installazione forzata dei pacchetti stabili necessari
-          # Non usiamo 'yes |', poiché la licenza è già accettata
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
-          # 5. Scarica e Unzip l'NDK (Buildozer fa questo ma vogliamo essere sicuri)
+          # 5. Scarica e Unzip l'NDK
           echo "Download e installazione manuale di NDK $NDK_VER..."
           wget -q https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip -O android-ndk.zip
           unzip -q android-ndk.zip -d "$NDK_DIR"
@@ -75,8 +77,7 @@ jobs:
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
-          # 7. Applicazione della patch Libffi/Autoreconf (Dobbiamo far girare Buildozer una volta per creare la directory build-hacks)
-          # Eseguiamo un 'buildozer android update' MOLTO VELOce, solo per scaricare p4a/build-hacks
+          # 7. Applicazione della patch Libffi/Autoreconf
           echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
           buildozer android update
 
