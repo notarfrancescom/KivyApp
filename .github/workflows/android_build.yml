@@ -18,14 +18,12 @@ jobs:
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          # Versione Python compatibile con NDK 21b
           python-version: '3.8' 
 
       - name: Install Buildozer and Dependencies
         run: |
           pip install buildozer cython 
           sudo apt update
-          # Installazione dei tool necessari per la compilazione nativa
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
           
       - name: Manual Android SDK/NDK Setup and License Acceptance
@@ -47,10 +45,14 @@ jobs:
           echo "Tentativo di accettazione generica di tutte le licenze Android..."
           yes | "$SDK_TOOLS_BIN" --licenses
 
-          # 4. Installazione forzata dei pacchetti stabili necessari
-          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
-          # Usiamo API 28 e Build Tools 30.0.3 per bypassare il problema di licenza del 36.1.0
+          # 4. Installazione forzata dei pacchetti stabili necessari (DOPPIO TENTATIVO)
+          # A volte le dipendenze richiedono che il comando venga eseguito più volte.
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 1)..."
           yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
+
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 2)..."
+          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
+
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
@@ -63,21 +65,14 @@ jobs:
              echo "ATTENZIONE: Directory build-hacks non trovata."
              exit 1
           fi
-
-      # ----------------------------------------------------------------------
       
       - name: Compile APK via Buildozer (Release Finale)
         env:
-          # Forziamo NDK 21b e la compilazione su singolo thread per evitare crash
           ANDROIDNDK: 21b 
           P4A_COMPILE_ENDIAN_SINGLE: 1 
         run: |
-          # Eseguiamo il build release completo
           yes | buildozer android release
         
-      # ----------------------------------------------------------------------
-      # --- FIRMA APK ---
-      # ----------------------------------------------------------------------
       - name: Decode Keystore
         if: success()
         run: |
