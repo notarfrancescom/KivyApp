@@ -41,11 +41,24 @@ jobs:
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip -O android-cmdline.zip
           
           # Estraiamo il contenuto in una cartella temporanea nell'SDK_DIR
+          # Il flag 'd' estrae nella directory specificata
           unzip -q android-cmdline.zip -d "$SDK_DIR/temp_tools"
           
-          # CORREZIONE: Sposta la cartella cmdline-tools interna nella posizione 'latest'
-          mkdir -p "$SDK_DIR/cmdline-tools"
-          mv "$SDK_DIR/temp_tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+          # CORREZIONE FINALE: Sposta il contenuto estratto (che può essere la cartella cmdline-tools o il suo contenuto) 
+          # nella posizione 'latest' richiesta, gestendo la nidificazione.
+          
+          mkdir -p "$SDK_DIR/cmdline-tools/latest"
+
+          # Controlla se l'unzip ha creato una sottocartella 'cmdline-tools'
+          if [ -d "$SDK_DIR/temp_tools/cmdline-tools" ]; then
+              # Se la cartella interna esiste (doppia nidificazione), sposta il contenuto della cartella interna.
+              echo "Trovata doppia nidificazione: Sposto $SDK_DIR/temp_tools/cmdline-tools/*"
+              mv "$SDK_DIR/temp_tools/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest"
+          else
+              # Se la cartella interna non esiste, sposta tutto il contenuto della cartella temporanea.
+              echo "Trovata estrazione diretta: Sposto $SDK_DIR/temp_tools/*"
+              mv "$SDK_DIR/temp_tools"/* "$SDK_DIR/cmdline-tools/latest"
+          fi
           
           # Pulisci il temp
           rm -rf "$SDK_DIR/temp_tools"
@@ -56,7 +69,6 @@ jobs:
              echo "ERRORE: sdkmanager non trovato. Path cercato: $SDK_TOOLS_BIN"
              exit 1
           fi
-
           # 3. Soluzione DEFINITIVA: Crea manualmente il file di accettazione della licenza.
           echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
           mkdir -p "$SDK_DIR/licenses"
