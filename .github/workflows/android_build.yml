@@ -18,41 +18,39 @@ jobs:
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          # Versione Python compatibile con NDK 21b e Buildozer stabile
+          # Versione Python compatibile con NDK 21b
           python-version: '3.8' 
 
       - name: Install Buildozer and Dependencies
         run: |
           pip install buildozer cython 
           sudo apt update
-          # Installazione dei tool necessari per la compilazione native
+          # Installazione dei tool necessari per la compilazione nativa
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
           
-      - name: Buildozer Initial Setup (Download Toolchain)
-        # Questo passo scarica l'NDK (21b), l'SDK e le ricette senza avviare la compilazione
+      - name: Buildozer Setup, License, and Patch
         run: |
-          # 1. Pulizia e Setup Iniziale 
+          # 1. Pulizia Forzata
           rm -rf /home/runner/.buildozer/android
-          buildozer android update 
           
-      - name: Force Accept SDK Licenses
-        # Passo cruciale per risolvere l'errore 'Accept? (y/N)' e il timeout.
-        run: |
+          # 2. Setup Buildozer (Scarica NDK, SDK e p4a)
+          echo "Avvio setup Buildozer..."
+          buildozer android update
+          
+          # 3. Trova il path dell'SDK Manager
           SDK_TOOLS_BIN=$(find /home/runner/.buildozer/android/platform/android-sdk/ -name 'sdkmanager' -type f -print -quit)
           
-          if [ -f "$SDK_TOOLS_BIN" ]; then
-             echo "Accettazione forzata delle licenze SDK..."
-             # Utilizza sdkmanager direttamente
-             yes | "$SDK_TOOLS_BIN" --licenses
-             echo "Licenze accettate."
-          else
-             echo "sdkmanager non trovato, errore nel setup precedente."
+          if [ ! -f "$SDK_TOOLS_BIN" ]; then
+             echo "ERRORE: sdkmanager non trovato dopo il setup iniziale."
              exit 1
           fi
 
-      - name: Apply Libffi Patch
-        # Patch per risolvere l'errore 'LT_SYS_SYMBOL_USCORE' / 'Broken pipe'
-        run: |
+          # 4. Accetta le Licenze e Installa TUTTI i pacchetti necessari
+          echo "Accettazione licenze e installazione pacchetti obbligatori (Build Tools 36.1)..."
+          # Installiamo i pacchetti richiesti per l'API 27 e Build Tools 36.1, accettando le licenze
+          yes | "$SDK_TOOLS_BIN" --install "platform-tools" "build-tools;36.1.0" "platforms;android-27" --licenses
+
+          # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
           HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
           
@@ -61,21 +59,22 @@ jobs:
              echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
           else
              echo "ATTENZIONE: Directory build-hacks non trovata."
-             exit 1 
+             exit 1
           fi
 
 
       - name: Compile APK via Buildozer (Release Finale)
         env:
-          # Forziamo NDK 21b per massima stabilità
+          # Forziamo NDK 21b e la compilazione su singolo thread per evitare crash
           ANDROIDNDK: 21b 
-          # Forziamo la compilazione su singolo thread per evitare crash CI
           P4A_COMPILE_ENDIAN_SINGLE: 1 
         run: |
           # Eseguiamo il build release completo
           yes | buildozer android release
         
-      # --- FIRMA APK ---
+      # ----------------------------------------------------------------------
+      # --- FIRMA APK (Non modificare se le Secrets sono configurate) ---
+      # ----------------------------------------------------------------------
       - name: Decode Keystore
         if: success()
         run: |
