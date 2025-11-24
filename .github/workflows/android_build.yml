@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-    # Utilizza Ubuntu 22.04 LTS per maggiore stabilità
     runs-on: ubuntu-22.04 
     steps:
       - name: Checkout Code
@@ -46,13 +45,12 @@ jobs:
           yes | "$SDK_TOOLS_BIN" --licenses
 
           # 4. Installazione forzata dei pacchetti stabili necessari (DOPPIO TENTATIVO)
-          # A volte le dipendenze richiedono che il comando venga eseguito più volte.
+          # Per creare la directory build-tools ed evitare l'errore AIDL.
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 1)..."
           yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 2)..."
           yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
-
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
@@ -70,7 +68,9 @@ jobs:
         env:
           ANDROIDNDK: 21b 
           P4A_COMPILE_ENDIAN_SINGLE: 1 
-        run: |
+          # !!! PATCH FINALE: Forza l'ignoranza delle licenze durante il build !!!
+          **ANDROID_SDK_IGNORE_LICENSES: 1** run: |
+          # Eseguiamo il build release completo
           yes | buildozer android release
         
       - name: Decode Keystore
