@@ -33,23 +33,28 @@ jobs:
           buildozer android update
 
           # 2. Trova il path dell'SDK Manager
-          SDK_TOOLS_BIN=$(find /home/runner/.buildozer/android/platform/android-sdk/ -name 'sdkmanager' -type f -print -quit)
+          SDK_DIR=$(find /home/runner/.buildozer/android/platform/android-sdk/ -type d -print -quit)
+          SDK_TOOLS_BIN=$(find "$SDK_DIR" -name 'sdkmanager' -type f -print -quit)
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
              echo "ERRORE: sdkmanager non trovato dopo il setup iniziale."
              exit 1
           fi
 
-          # 3. Tentativo di accettazione generica delle licenze
-          echo "Tentativo di accettazione generica di tutte le licenze Android..."
-          yes | "$SDK_TOOLS_BIN" --licenses
+          # 3. Soluzione DEFINITIVA: Crea manualmente il file di accettazione della licenza.
+          # Questo bypassa OGNI prompt 'Accept? (y/N):'
+          echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
+          mkdir -p "$SDK_DIR/licenses"
+          # Il file contiene l'hash della licenza (dopo l'accettazione)
+          echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
+          echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
+          
+          # 4. Installazione forzata dei pacchetti stabili necessari
+          # Ora che la licenza è accettata, l'installazione dovrebbe avvenire senza prompt.
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
+          # NON USIAMO yes | per questo comando, ma eseguiamo direttamente SDK manager.
+          "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
-          # 4. Installazione forzata dei pacchetti stabili necessari (DOPPIO TENTATIVO)
-          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 1)..."
-          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
-
-          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Tentativo 2)..."
-          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
