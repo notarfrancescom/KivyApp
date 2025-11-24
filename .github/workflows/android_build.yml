@@ -35,6 +35,17 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
         run: |
+          # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
+          echo "Forzatura della versione NDK e API in buildozer.spec..."
+          # Rimuove le righe vecchie se esistono (inclusi i commenti)
+          sed -i '/android.ndk=/d' buildozer.spec
+          sed -i '/android.ndk_path=/d' buildozer.spec
+          sed -i '/android.api=/d' buildozer.spec
+          
+          # Aggiunge i valori corretti nel file
+          echo "android.ndk = $NDK_VER" >> buildozer.spec
+          echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
+          echo "android.api = 28" >> buildozer.spec
           # 1. Definisci le directory e la versione NDK CORRETTA
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
