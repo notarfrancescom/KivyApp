@@ -39,13 +39,16 @@ jobs:
           # 2. Scarica e Unzip l'SDK Command Line Tools
           echo "Download e installazione manuale dell'SDK Command Line Tools..."
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip -O android-cmdline.zip
-          unzip -q android-cmdline.zip -d "$SDK_DIR"
           
-          # CORREZIONE: Sposta la cartella estratta 'cmdline-tools' nel formato richiesto
-          # Nota: Lo zip estrae una cartella chiamata 'cmdline-tools' che contiene i binari.
-          # Lo spostiamo in $SDK_DIR/cmdline-tools/latest/
+          # Estraiamo il contenuto in una cartella temporanea nell'SDK_DIR
+          unzip -q android-cmdline.zip -d "$SDK_DIR/temp_tools"
+          
+          # CORREZIONE: Sposta la cartella cmdline-tools interna nella posizione 'latest'
           mkdir -p "$SDK_DIR/cmdline-tools"
-          mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest"
+          mv "$SDK_DIR/temp_tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+          
+          # Pulisci il temp
+          rm -rf "$SDK_DIR/temp_tools"
           
           export SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           
