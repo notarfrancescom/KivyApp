@@ -46,9 +46,14 @@ jobs:
           fi
 
           # 4. Accetta le Licenze e Installa TUTTI i pacchetti necessari
-          echo "Accettazione licenze e installazione pacchetti obbligatori (Build Tools 36.1)..."
-          # Installiamo Build Tools 30.0.3 (versione stabile più vecchia) e la piattaforma API 27
-          yes | "$SDK_TOOLS_BIN" --install "platform-tools" "build-tools;30.0.3" "platforms;android-27" --licenses
+          echo "Accettazione di tutte le licenze Android e installazione dei pacchetti essenziali..."
+          
+          # Tentiamo l'accettazione delle licenze di TUTTI i pacchetti principali
+          yes | "$SDK_TOOLS_BIN" --licenses
+
+          # Ora installiamo i pacchetti essenziali necessari per la compilazione (API 27 e Build Tools 30.0.3)
+          # Questi non dovrebbero più chiedere la licenza dopo il comando precedente
+          yes | "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-27"
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
