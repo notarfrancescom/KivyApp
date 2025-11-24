@@ -35,7 +35,7 @@ jobs:
       - name: Manual Android SDK/NDK Setup (Final Attempt)
         id: android_setup
         env:
-          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza l'ambiente per il passo
+          JAVA_HOME: ${{ env.JAVA8_HOME }} 
         run: |
           # 1. Definisci le directory (stesse usate da Buildozer)
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
@@ -47,12 +47,9 @@ jobs:
 
           # 2. Scarica e Unzip l'SDK Command Line Tools VECCHIO (versione 4333796)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
+          # ... (resto del setup SDK, che ora funziona) ...
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
-          
-          # Estrai direttamente nella cartella SDK
           unzip -q android-cmdline.zip -d "$SDK_DIR"
-          
-          # Il tool sdkmanager si trova in $SDK_DIR/tools/bin/sdkmanager
           export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
@@ -63,40 +60,31 @@ jobs:
           # 3. SOLUZIONE FINALE: Crea manualmente tutti i file di licenza necessari.
           echo "Creazione forzata di TUTTI i file di licenza per bypassare OGNI prompt..."
           mkdir -p "$SDK_DIR/licenses"
-          
-          # Hash delle licenze più comuni (SDK, Preview, Google APIs)
-          LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\n" # android-sdk-license
-          LICENSES_CONTENT+="d975f826639434f7480e1c2777176d7fae9a4f4d\n" # android-sdk-preview-license
-          LICENSES_CONTENT+="24333f8a63b6825ea9c5514f83c2829b004d1fee\n" # android-sdk-license (nuovo)
-          
-          # Scrivi tutte le licenze nel file principale
+          LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\n" 
+          LICENSES_CONTENT+="d975f826639434f7480e1c2777176d7fae9a4f4d\n" 
+          LICENSES_CONTENT+="24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
           echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
-          
-          # Aggiungi l'hash di google-gapps (richiesta da Play services e Build-Tools)
           echo "33b6a67a0746816094254b1e9564177d1a932d43" > "$SDK_DIR/licenses/google-gapps-license"
           
           # 4. Installazione forzata dei pacchetti stabili necessari
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
-          # 5. Scarica e Unzip l'NDK (Aggiunta verifica del download)
-          echo "Download e installazione manuale di NDK $NDK_VER..."
+          # 5. Scarica e Unzip l'NDK (USO DI CURL)
+          echo "Download e installazione manuale di NDK $NDK_VER (usando curl)..."
           NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
           NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
           
-          # Tentativo di download
-          wget -q "$NDK_URL" -O android-ndk.zip
+          # Uso di curl per maggiore robustezza nel download
+          curl -L -f -o android-ndk.zip "$NDK_URL"
           
-          # Verifica che il file ZIP sia stato scaricato
-          if [ ! -f "android-ndk.zip" ] || [ ! -s "android-ndk.zip" ]; then
-             echo "ERRORE: Download NDK fallito o file vuoto. URL: $NDK_URL"
+          # Verifica e estrazione
+          if [ ! -s "android-ndk.zip" ]; then
+             echo "ERRORE FATALE: Download NDK fallito o file ZIP vuoto."
              exit 1
           fi
 
-          # Estrazione e spostamento
           unzip -q android-ndk.zip -d "$NDK_DIR"
-          
-          # Rimuove il file ZIP per pulizia
           rm android-ndk.zip
 
           # Sposta la cartella estratta nella posizione corretta
@@ -105,12 +93,11 @@ jobs:
           
           if [ -d "$EXTRACTED_NDK_FOLDER" ]; then
              mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
-             echo "NDK spostato in $FINAL_NDK_FOLDER"
+             echo "NDK installato con successo in $FINAL_NDK_FOLDER"
           else
-             echo "ERRORE CRITICO: La cartella NDK non è stata estratta correttamente in $EXTRACTED_NDK_FOLDER."
+             echo "ERRORE CRITICO: La cartella NDK non è stata estratta. Verificare l'URL."
              exit 1
           fi
-
           
           # 6. Settaggio delle variabili d'ambiente per il passo successivo
           echo "Settaggio Variabili d'Ambiente NDK/SDK..."
