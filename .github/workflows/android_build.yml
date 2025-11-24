@@ -1,4 +1,4 @@
-name: Android CI Buildozer Manual (ULTIMATE FIX)
+name: Android CI Buildozer Manual (ULTIMATE FIX - NDK Logger)
 
 on:
   push:
@@ -35,17 +35,6 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
         run: |
-          # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
-          echo "Forzatura della versione NDK e API in buildozer.spec..."
-          # Rimuove le righe vecchie se esistono (inclusi i commenti)
-          sed -i '/android.ndk=/d' buildozer.spec
-          sed -i '/android.ndk_path=/d' buildozer.spec
-          sed -i '/android.api=/d' buildozer.spec
-          
-          # Aggiunge i valori corretti nel file
-          echo "android.ndk = $NDK_VER" >> buildozer.spec
-          echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
-          echo "android.api = 28" >> buildozer.spec
           # 1. Definisci le directory e la versione NDK CORRETTA
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
@@ -55,6 +44,20 @@ jobs:
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
+          # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
+          echo "Forzatura della versione NDK e API in buildozer.spec e setting log_level=2..."
+          # Rimuove le righe vecchie se esistono (inclusi i commenti)
+          sed -i '/android.ndk=/d' buildozer.spec
+          sed -i '/android.ndk_path=/d' buildozer.spec
+          sed -i '/android.api=/d' buildozer.spec
+          sed -i '/log_level=/d' buildozer.spec
+          
+          # Aggiunge i valori corretti nel file
+          echo "android.ndk = $NDK_VER" >> buildozer.spec
+          echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
+          echo "android.api = 28" >> buildozer.spec
+          echo "log_level = 2" >> buildozer.spec
+          
           # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
@@ -107,6 +110,10 @@ jobs:
           echo "Eliminazione della cartella NDK obsoleta r21b..."
           rm -rf /home/runner/.buildozer/android/platform/android-ndk-r21b
           
+          # *** COMANDO CRITICO: Pulizia della cache di python-for-android ***
+          echo "Pulizia della cache python-for-android (~/.p4a)"
+          rm -rf ~/.p4a 
+          
           echo "Esecuzione rapida di buildozer android update forzando il PATH NDK..."
           
           # *** FORZATURA TOTALE DELL'AMBIENTE SUL COMANDO UPDATE ***
@@ -123,11 +130,12 @@ jobs:
           HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
           
           if [ -d "$HACKS_DIR" ]; then
+             # Usiamo sed per commentare la riga che causa problemi con toolchain vecchie
              sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
              echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
           else
-             echo "ATTENZIONE: Directory build-hacks non trovata."
-             exit 1
+             echo "ATTENZIONE: Directory build-hacks non trovata. Continuo (potrebbe fallire dopo)."
+             # Non usiamo exit 1 qui per dare una possibilità in più
           fi
 
       - name: Compile APK via Buildozer (Release Finale)
@@ -138,32 +146,4 @@ jobs:
           # FORZATURA TOTALE SULLA COMPILAZIONE FINALE
           ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
           NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
-          P4A_COMPILE_ENDIAN_SINGLE: 1 
-          ANDROID_SDK_IGNORE_LICENSES: 1 
-        run: |
-          buildozer android release
-        
-      - name: Decode Keystore
-        if: success()
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
-
-      - name: Sign APK
-        if: success()
-        env:
-          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per jarsigner
-        run: |
-          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
-          
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
-          -keystore android.keystore \
-          -storepass ${{ secrets.KEYSTORE_PASS }} \
-          $APK_PATH ${{ secrets.KEY_ALIAS }} \
-          -keypass ${{ secrets.KEY_PASS }}
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-app-apk-release
-          path: ./bin/*.apk
+          P
