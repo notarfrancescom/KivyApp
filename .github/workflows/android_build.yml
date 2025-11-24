@@ -40,14 +40,14 @@ jobs:
           # 1. Definisci le directory (stesse usate da Buildozer)
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
-          export NDK_VER=21b
+          export NDK_VER=22b # <--- AGGIORNATO A 22b
           
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
           # 2. Scarica e Unzip l'SDK Command Line Tools VECCHIO (versione 4333796)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
-          # ... (resto del setup SDK, che ora funziona) ...
+          # ... (Setup SDK precedente, ora funzionante) ...
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
           unzip -q android-cmdline.zip -d "$SDK_DIR"
           export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
