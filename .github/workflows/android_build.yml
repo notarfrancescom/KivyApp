@@ -1,4 +1,4 @@
-name: Android CI Buildozer Manual (Patch Anti-Libffi)
+name: Android CI Buildozer Manual (Patch Anti-Libffi - Fix Java 11)
 
 on:
   push:
@@ -23,8 +23,17 @@ jobs:
         run: |
           pip install buildozer cython 
           sudo apt update
-          sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
+          # Installazione dei tool necessari per la compilazione nativa E Java 8
+          sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-8-jdk
           
+      # NUOVO PASSO CRUCIALE: Forza l'uso di Java 8 per l'SDK Manager legacy
+      - name: Set Default Java to JDK 8
+        run: |
+          echo "Impostazione di Java 8 come default per risolvere l'errore XmlSchema..."
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          # Verifica per debug
+          java -version
+
       - name: Manual Android SDK/NDK Setup (Final Attempt)
         id: android_setup
         run: |
@@ -37,7 +46,6 @@ jobs:
           mkdir -p "$NDK_DIR"
 
           # 2. Scarica e Unzip l'SDK Command Line Tools VECCHIO (versione 4333796)
-          # Questo URL punta alla versione che funzionava con Buildozer prima del 2020.
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
           
@@ -53,14 +61,12 @@ jobs:
           fi
 
           # 3. Soluzione DEFINITIVA: Crea manualmente il file di accettazione della licenza.
-          # Questo bypassa OGNI prompt 'Accept? (y/N):'
           echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
           mkdir -p "$SDK_DIR/licenses"
           echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
           echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
           
           # 4. Installazione forzata dei pacchetti stabili necessari
-          # Ora che la licenza è accettata e l'SDK tools è stabile, installiamo.
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
@@ -78,7 +84,6 @@ jobs:
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
           # 7. Applicazione della patch Libffi/Autoreconf
-          # Eseguiamo un 'buildozer android update' MOLTO VELOCE, solo per scaricare i file di p4a necessari.
           echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
           buildozer android update
 
@@ -92,18 +97,14 @@ jobs:
              echo "ATTENZIONE: Directory build-hacks non trovata."
              exit 1
           fi
-
+      
       - name: Compile APK via Buildozer (Release Finale)
         env:
-          # Queste env sono impostate dal passo precedente, le manteniamo per chiarezza.
-          # Impostiamo Buildozer per usare l'API e NDK che abbiamo installato manualmente.
           ANDROID_API: 28 
           ANDROIDNDK: 21b 
           P4A_COMPILE_ENDIAN_SINGLE: 1 
-          # L'ignoranza delle licenze ora è superflua, ma la manteniamo per super-precauzione.
           ANDROID_SDK_IGNORE_LICENSES: 1 
         run: |
-          # Non usiamo 'yes |' perché tutti i prerequisiti sono installati.
           buildozer android release
         
       - name: Decode Keystore
