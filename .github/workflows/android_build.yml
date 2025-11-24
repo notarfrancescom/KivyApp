@@ -1,4 +1,4 @@
-name: Android CI Buildozer Manual (FINAL FIX)
+name: Android CI Buildozer Manual (ULTIMATE FIX)
 
 on:
   push:
@@ -30,8 +30,7 @@ jobs:
           echo "JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
           echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
 
-
-      - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - Symbolic Link & sdkmanager)
+      - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - NDK Environment Override)
         id: android_setup
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
@@ -40,6 +39,7 @@ jobs:
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
           export NDK_VER=25c 
+          export FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
           
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
@@ -50,9 +50,6 @@ jobs:
           unzip -q android-cmdline.zip -d "$SDK_DIR"
           rm android-cmdline.zip
           
-          # Il file ZIP estrae la cartella 'tools' direttamente in $SDK_DIR.
-          # Il percorso corretto per sdkmanager è ora $SDK_DIR/tools/bin/sdkmanager.
-          
           export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
@@ -61,12 +58,13 @@ jobs:
           fi
           
           # 3. BYPASS LICENZA e installazione SDK
-          echo "Creazione licenze e installazione forzata dei pacchetti SDK..."
+          echo "Creazione forzata di TUTTI i file di licenza per bypassare OGNI prompt..."
           mkdir -p "$SDK_DIR/licenses"
           LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\nd975f826639434f7480e1c2777176d7fae9a4f4d\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
           echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
-          
-          # Installazione dei pacchetti:
+          echo "33b6a67a0746816094254b1e9564177d1a932d43" > "$SDK_DIR/licenses/google-gapps-license"
+
+          echo "Installazione forzata dei pacchetti SDK (Build Tools 30.0.3, Platform Tools e API 28 stabile)..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 4. Scarica e Unzip l'NDK r25c
@@ -77,40 +75,38 @@ jobs:
           unzip -q android-ndk.zip -d "$NDK_DIR"
           rm android-ndk.zip
 
-          # Sposta e definisci il path finale
           EXTRACTED_NDK_FOLDER="$NDK_DIR/android-ndk-r${NDK_VER}"
-          FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
           mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
           echo "NDK installato con successo in $FINAL_NDK_FOLDER"
           
-          # 5. FIX NDK CRITICO: CREA UN SYMBOLIC LINK!
-          # Buildozer cerca il NDK preferito (r21b) ma lo facciamo puntare al nostro NDK (25c)
-          PREFERRED_NDK_PATH="$NDK_DIR/android-ndk-r21b"
-          if [ ! -d "$PREFERRED_NDK_PATH" ]; then
-              echo "Creazione del link simbolico da r21b a $FINAL_NDK_FOLDER"
-              ln -s "$FINAL_NDK_FOLDER" "$PREFERRED_NDK_PATH"
-          fi
-          
-          # 6. Settaggio delle variabili d'ambiente (incluse quelle del runner)
+          # 5. Settaggio delle variabili d'ambiente globali GITHUB_ENV
           echo "Settaggio Variabili d'Ambiente NDK/SDK..."
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK=$PREFERRED_NDK_PATH" >> $GITHUB_ENV # Punti alla r21b (che ora è un link a 25c)
-          echo "NDK_HOME=$PREFERRED_NDK_PATH" >> $GITHUB_ENV
-          echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
-          
-          # 7. PULIZIA E AGGIORNAMENTO
-          echo "Pulizia delle cartelle build precedenti..."
+          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH # Aggiunge platform-tools al PATH
+
+          # 6. PULIZIA ESTREMA E PREPARAZIONE
+          echo "Pulizia estrema delle cartelle build precedenti..."
           rm -rf .buildozer/android/platform/build-*
           rm -rf .buildozer/android/platform/dist-*
+          
+          # ELIMINIAMO LA CARTELLA RESIDUA CHE CREA IL CONFLITTO NDK
+          echo "Eliminazione della cartella NDK obsoleta r21b..."
+          rm -rf /home/runner/.buildozer/android/platform/android-ndk-r21b
+          
+          echo "Esecuzione rapida di buildozer android update forzando il PATH NDK..."
+          
+          # *** FORZATURA TOTALE DELL'AMBIENTE SUL COMANDO UPDATE ***
+          ANDROID_NDK=$FINAL_NDK_FOLDER NDK_HOME=$FINAL_NDK_FOLDER buildozer android update
 
-          echo "Esecuzione rapida di buildozer android update..."
-          # Ora Buildozer dovrebbe trovare l'NDK "r21b" che in realtà è il 25c!
-          buildozer android update
-
-      # --- NUOVO STEP PER LA PATCH E LA PREPARAZIONE ---
       - name: Patch Libffi and Finalize Setup
         if: success()
+        env:
+          # FORZATURA SULLO STEP SUCCESSIVO
+          ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
+          NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
         run: |
           echo "Applicazione della patch per libffi/autoreconf..."
           HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
@@ -128,7 +124,7 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
           ANDROID_API: 28 
-          # PASSAGGIO ESPLICITO AL COMANDO PER SOVRASCRIVERE OGNI AMBIENTE
+          # FORZATURA TOTALE SULLA COMPILAZIONE FINALE
           ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
           NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
           P4A_COMPILE_ENDIAN_SINGLE: 1 
@@ -138,7 +134,7 @@ jobs:
         
       - name: Decode Keystore
         if: success()
-        run: | # <-- CORREZIONE YAML: questa riga è ora indentata correttamente
+        run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
 
       - name: Sign APK
