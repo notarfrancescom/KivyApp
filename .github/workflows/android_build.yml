@@ -47,8 +47,8 @@ jobs:
 
           # 4. Accetta le Licenze e Installa TUTTI i pacchetti necessari
           echo "Accettazione licenze e installazione pacchetti obbligatori (Build Tools 36.1)..."
-          # Installiamo i pacchetti richiesti per l'API 27 e Build Tools 36.1, accettando le licenze
-          yes | "$SDK_TOOLS_BIN" --install "platform-tools" "build-tools;36.1.0" "platforms;android-27" --licenses
+          # Installiamo Build Tools 30.0.3 (versione stabile più vecchia) e la piattaforma API 27
+          yes | "$SDK_TOOLS_BIN" --install "platform-tools" "build-tools;30.0.3" "platforms;android-27" --licenses
 
           # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
