@@ -135,7 +135,6 @@ jobs:
              echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4"
           else
              echo "ATTENZIONE: Directory build-hacks non trovata. Continuo (potrebbe fallire dopo)."
-             # Non usiamo exit 1 qui per dare una possibilità in più
           fi
 
       - name: Compile APK via Buildozer (Release Finale)
@@ -146,4 +145,38 @@ jobs:
           # FORZATURA TOTALE SULLA COMPILAZIONE FINALE
           ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk/25c
           NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk/25c
-          P
+          P4A_COMPILE_ENDIAN_SINGLE: 1 
+          ANDROID_SDK_IGNORE_LICENSES: 1 
+        run: |
+          buildozer android release
+        
+      # --- FIRMA E UPLOAD (Assumendo che siano richiesti) ---
+      - name: Decode Keystore
+        if: success()
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      - name: Sign APK
+        if: success()
+        env:
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per jarsigner
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+          
+          # HO CORRETTO L'INDENTAZIONE E AGGIUNTO LE VIRGOLETTE SINGOLE AI SEGRETI PER EVITARE ERRORI YAML/SHELL
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+            -keystore android.keystore \
+            -storepass '${{ secrets.KEYSTORE_PASS }}' \
+            $APK_PATH ${{ secrets.KEY_ALIAS }} \
+            -keypass '${{ secrets.KEY_PASS }}'
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ./bin/*.apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ./bin/*.apk
