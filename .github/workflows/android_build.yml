@@ -44,22 +44,19 @@ jobs:
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
-          # 2. Scarica e Unzip l'SDK Command Line Tools (DEVE ESSERE DENTRO UNA CARTELLA tools)
+          # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
           echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
           wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
-          mkdir -p "$SDK_DIR/tools" # Crea la cartella 'tools'
           unzip -q android-cmdline.zip -d "$SDK_DIR"
           rm android-cmdline.zip
           
-          # I tool di riga di comando (tools/bin/sdkmanager) sono ora in $SDK_DIR/tools/tools/bin
-          # Dobbiamo spostarli nel posto corretto ($SDK_DIR/tools/bin)
-          mv "$SDK_DIR/tools/tools/"* "$SDK_DIR/tools/"
-          rmdir "$SDK_DIR/tools/tools"
+          # Il file ZIP estrae la cartella 'tools' direttamente in $SDK_DIR.
+          # Il percorso corretto per sdkmanager è ora $SDK_DIR/tools/bin/sdkmanager.
           
           export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
-             echo "ERRORE: sdkmanager non trovato dopo lo spostamento. Path cercato: $SDK_TOOLS_BIN"
+             echo "ERRORE CRITICO: sdkmanager non trovato al path atteso. Path cercato: $SDK_TOOLS_BIN"
              exit 1
           fi
           
@@ -69,6 +66,7 @@ jobs:
           LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\nd975f826639434f7480e1c2777176d7fae9a4f4d\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
           echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
           
+          # Installazione dei pacchetti:
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 4. Scarica e Unzip l'NDK r25c
