@@ -31,7 +31,7 @@ jobs:
           echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
 
 
-      - name: Manual Android SDK/NDK Setup (FINAL FIX - Intrusive Clean)
+      - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - Symbolic Link & sdkmanager)
         id: android_setup
         env:
           JAVA_HOME: ${{ env.JAVA8_HOME }}
@@ -39,42 +39,75 @@ jobs:
           # 1. Definisci le directory e la versione NDK CORRETTA
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
-          export NDK_VER=25c # Versione NDK stabile e disponibile
+          export NDK_VER=25c 
           
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
-          # 2. Scarica e Unzip l'SDK Command Line Tools VECCHIO (omessi i passaggi precedenti per brevità)
-          # ... (Passi 2, 3, 4 di download SDK e installazione licenze rimangono uguali) ...
+          # 2. Scarica e Unzip l'SDK Command Line Tools (DEVE ESSERE DENTRO UNA CARTELLA tools)
+          echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
+          wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
+          mkdir -p "$SDK_DIR/tools" # Crea la cartella 'tools'
+          unzip -q android-cmdline.zip -d "$SDK_DIR"
+          rm android-cmdline.zip
           
-          # 5. Scarica e Unzip l'NDK r25c (COME HAI GIA' FATTO E HA FUNZIONATO)
+          # I tool di riga di comando (tools/bin/sdkmanager) sono ora in $SDK_DIR/tools/tools/bin
+          # Dobbiamo spostarli nel posto corretto ($SDK_DIR/tools/bin)
+          mv "$SDK_DIR/tools/tools/"* "$SDK_DIR/tools/"
+          rmdir "$SDK_DIR/tools/tools"
+          
+          export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
+          
+          if [ ! -f "$SDK_TOOLS_BIN" ]; then
+             echo "ERRORE: sdkmanager non trovato dopo lo spostamento. Path cercato: $SDK_TOOLS_BIN"
+             exit 1
+          fi
+          
+          # 3. BYPASS LICENZA e installazione SDK
+          echo "Creazione licenze e installazione forzata dei pacchetti SDK..."
+          mkdir -p "$SDK_DIR/licenses"
+          LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\nd975f826639434f7480e1c2777176d7fae9a4f4d\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
+          echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
+          
+          "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
+
+          # 4. Scarica e Unzip l'NDK r25c
           echo "Download e installazione manuale di NDK $NDK_VER (usando curl)..."
           NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
           NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
-          # Esegue il download e l'installazione... (omessi i comandi di curl/unzip/mv per brevità)
-          
-          # Assumi che NDK sia installato correttamente in $FINAL_NDK_FOLDER
-          FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
-          # Questo è un placeholder. Assicurati che i comandi curl/unzip del file completo funzionino prima.
+          curl -L -f -o android-ndk.zip "$NDK_URL"
+          unzip -q android-ndk.zip -d "$NDK_DIR"
+          rm android-ndk.zip
 
-          # 6. Settaggio delle variabili d'ambiente
+          # Sposta e definisci il path finale
+          EXTRACTED_NDK_FOLDER="$NDK_DIR/android-ndk-r${NDK_VER}"
+          FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
+          mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
+          echo "NDK installato con successo in $FINAL_NDK_FOLDER"
+          
+          # 5. FIX NDK CRITICO: CREA UN SYMBOLIC LINK!
+          # Buildozer cerca il NDK preferito (r21b) ma lo facciamo puntare al nostro NDK (25c)
+          PREFERRED_NDK_PATH="$NDK_DIR/android-ndk-r21b"
+          if [ ! -d "$PREFERRED_NDK_PATH" ]; then
+              echo "Creazione del link simbolico da r21b a $FINAL_NDK_FOLDER"
+              ln -s "$FINAL_NDK_FOLDER" "$PREFERRED_NDK_PATH"
+          fi
+          
+          # 6. Settaggio delle variabili d'ambiente (incluse quelle del runner)
           echo "Settaggio Variabili d'Ambiente NDK/SDK..."
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV # <--- Path NDK r25c (Necessario)
-          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "ANDROID_NDK=$PREFERRED_NDK_PATH" >> $GITHUB_ENV # Punti alla r21b (che ora è un link a 25c)
+          echo "NDK_HOME=$PREFERRED_NDK_PATH" >> $GITHUB_ENV
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "ANDROID_API=28" >> $GITHUB_ENV
           
-          # 7. PULIZIA ESTREMA: ELIMINA LA CACHE DI PYTHON-FOR-ANDROID
-          echo "Pulizia estrema della cache Buildozer/p4a..."
-          # Elimina tutti i metadati di build precedenti
+          # 7. PULIZIA E AGGIORNAMENTO
+          echo "Pulizia delle cartelle build precedenti..."
           rm -rf .buildozer/android/platform/build-*
           rm -rf .buildozer/android/platform/dist-*
-          # Elimina la cartella NDK vecchia che continua ad essere rilevata.
-          rm -rf /home/runner/.buildozer/android/platform/android-ndk-r21b
-          
-          # Forziamo un buildozer update per scaricare i toolchain ma senza lanciare il build
+
           echo "Esecuzione rapida di buildozer android update..."
+          # Ora Buildozer dovrebbe trovare l'NDK "r21b" che in realtà è il 25c!
           buildozer android update
 
       # --- NUOVO STEP PER LA PATCH E LA PREPARAZIONE ---
