@@ -1,4 +1,4 @@
-name: Android CI Buildozer Manual (Patch Anti-Libffi - Fix Java 11)
+name: Android CI Buildozer Manual (Patch Anti-Libffi - Java 8 EXPLICIT)
 
 on:
   push:
@@ -19,23 +19,23 @@ jobs:
         with:
           python-version: '3.8' 
 
-      - name: Install Buildozer and Dependencies
+      - name: Install Buildozer, Dependencies, and Java 8
         run: |
           pip install buildozer cython 
           sudo apt update
           # Installazione dei tool necessari per la compilazione nativa E Java 8
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-8-jdk
           
-      # NUOVO PASSO CRUCIALE: Forza l'uso di Java 8 per l'SDK Manager legacy
-      - name: Set Default Java to JDK 8
-        run: |
-          echo "Impostazione di Java 8 come default per risolvere l'errore XmlSchema..."
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          # Verifica per debug
-          java -version
+          # Aggiungi il path esplicito di Java 8 per l'uso successivo.
+          # Questo è il percorso standard in Ubuntu 22.04 per openjdk-8-jdk.
+          echo "JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
+          echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
+
 
       - name: Manual Android SDK/NDK Setup (Final Attempt)
         id: android_setup
+        env:
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza l'ambiente per il passo intero
         run: |
           # 1. Definisci le directory (stesse usate da Buildozer)
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
@@ -66,8 +66,11 @@ jobs:
           echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
           echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
           
-          # 4. Installazione forzata dei pacchetti stabili necessari
-          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
+          # 4. Installazione forzata dei pacchetti stabili necessari (INVOCAZIONE ESPLICITA DI JAVA 8)
+          # NOTA: Per eseguire sdkmanager con Java 8, dobbiamo passare l'eseguibile java come comando
+          # e sdkmanager come argomento del jar, ma sdkmanager è uno script wrapper.
+          # Semplifichiamo forzando JAVA_HOME nel passo. Se questo fallisce...
+          echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile (Forza JDK 8 tramite JAVA_HOME)..."
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
           # 5. Scarica e Unzip l'NDK
@@ -100,6 +103,7 @@ jobs:
       
       - name: Compile APK via Buildozer (Release Finale)
         env:
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Assicura che Buildozer usi Java 8
           ANDROID_API: 28 
           ANDROIDNDK: 21b 
           P4A_COMPILE_ENDIAN_SINGLE: 1 
@@ -114,6 +118,8 @@ jobs:
 
       - name: Sign APK
         if: success()
+        env:
+          JAVA_HOME: ${{ env.JAVA8_HOME }} # Assicura che jarsigner usi Java 8
         run: |
           APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
           
