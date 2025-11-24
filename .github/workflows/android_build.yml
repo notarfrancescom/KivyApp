@@ -25,19 +25,28 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4
           
-      - name: Manual Android SDK/NDK Setup and License Acceptance
+      - name: Manual Android SDK/NDK Setup (Final Attempt)
+        id: android_setup
         run: |
-          # 1. Pulizia Forzata e Setup Buildozer per scaricare NDK e p4a
-          rm -rf /home/runner/.buildozer/android
-          echo "Avvio setup Buildozer per scaricare solo NDK/SDK base..."
-          buildozer android update
+          # 1. Definisci le directory (stesse usate da Buildozer)
+          export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
+          export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
+          export NDK_VER=21b
+          
+          mkdir -p "$SDK_DIR"
+          mkdir -p "$NDK_DIR"
 
-          # 2. Trova il path dell'SDK Manager
-          SDK_DIR=$(find /home/runner/.buildozer/android/platform/android-sdk/ -type d -print -quit)
-          SDK_TOOLS_BIN=$(find "$SDK_DIR" -name 'sdkmanager' -type f -print -quit)
+          # 2. Scarica e Unzip l'SDK Command Line Tools più vecchi e stabili
+          # Non ci affidiamo al setup di Buildozer, facciamo tutto da noi.
+          echo "Download e installazione manuale dell'SDK Command Line Tools..."
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip -O android-cmdline.zip
+          unzip -q android-cmdline.zip -d "$SDK_DIR"
+          mv "$SDK_DIR/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+          
+          export SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
-             echo "ERRORE: sdkmanager non trovato dopo il setup iniziale."
+             echo "ERRORE: sdkmanager non trovato."
              exit 1
           fi
 
@@ -45,18 +54,32 @@ jobs:
           # Questo bypassa OGNI prompt 'Accept? (y/N):'
           echo "Creazione forzata del file di licenza Android per bypassare il blocco I/O..."
           mkdir -p "$SDK_DIR/licenses"
-          # Il file contiene l'hash della licenza (dopo l'accettazione)
           echo "8483b2796c466310f67491d90184aefd8f081498" > "$SDK_DIR/licenses/android-sdk-license"
           echo "d975f826639434f7480e1c2777176d7fae9a4f4d" > "$SDK_DIR/licenses/android-sdk-preview-license"
           
           # 4. Installazione forzata dei pacchetti stabili necessari
-          # Ora che la licenza è accettata, l'installazione dovrebbe avvenire senza prompt.
+          # Non usiamo 'yes |', poiché la licenza è già accettata
           echo "Installazione forzata di Build Tools 30.0.3, Platform Tools e API 28 stabile..."
-          # NON USIAMO yes | per questo comando, ma eseguiamo direttamente SDK manager.
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28"
 
+          # 5. Scarica e Unzip l'NDK (Buildozer fa questo ma vogliamo essere sicuri)
+          echo "Download e installazione manuale di NDK $NDK_VER..."
+          wget -q https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip -O android-ndk.zip
+          unzip -q android-ndk.zip -d "$NDK_DIR"
+          mv "$NDK_DIR/android-ndk-r${NDK_VER}" "$NDK_DIR/$NDK_VER"
+          
+          # 6. Settaggio delle variabili d'ambiente per il passo successivo
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_NDK=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
+          echo "NDK_HOME=$NDK_DIR/$NDK_VER" >> $GITHUB_ENV
+          echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
+          echo "ANDROID_API=28" >> $GITHUB_ENV
+          
+          # 7. Applicazione della patch Libffi/Autoreconf (Dobbiamo far girare Buildozer una volta per creare la directory build-hacks)
+          # Eseguiamo un 'buildozer android update' MOLTO VELOce, solo per scaricare p4a/build-hacks
+          echo "Esecuzione rapida di buildozer android update per scaricare i file di p4a..."
+          buildozer android update
 
-          # 5. Patch del bug Libffi
           echo "Applicazione della patch per libffi/autoreconf..."
           HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks' -type d -print -quit)
           
@@ -67,16 +90,19 @@ jobs:
              echo "ATTENZIONE: Directory build-hacks non trovata."
              exit 1
           fi
-      
+
       - name: Compile APK via Buildozer (Release Finale)
         env:
+          # Queste env sono impostate dal passo precedente, le manteniamo per chiarezza.
+          # Impostiamo Buildozer per usare l'API e NDK che abbiamo installato manualmente.
+          ANDROID_API: 28 
           ANDROIDNDK: 21b 
           P4A_COMPILE_ENDIAN_SINGLE: 1 
-          # PATCH FINALE: Forza l'ignoranza delle licenze durante il build
-          ANDROID_SDK_IGNORE_LICENSES: 1
+          # L'ignoranza delle licenze ora è superflua, ma la manteniamo per super-precauzione.
+          ANDROID_SDK_IGNORE_LICENSES: 1 
         run: |
-          # Eseguiamo il build release completo
-          yes | buildozer android release
+          # Non usiamo 'yes |' perché tutti i prerequisiti sono installati.
+          buildozer android release
         
       - name: Decode Keystore
         if: success()
