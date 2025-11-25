@@ -1,194 +1,196 @@
 name: Android CI Buildozer Manual (ULTIMATE FIX - NDK Logger)
+
 on:
-push:
-branches:
-- main
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
 jobs:
-build:
-runs-on: ubuntu-22.04
-steps:
-- name: Checkout Code
-uses: actions/checkout@v4
-  - name: Setup Python Environment
-    uses: actions/setup-python@v5
-    with:
-      python-version: '3.8' 
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-  - name: Install Buildozer, Dependencies, and Java 8
-    run: |
-      echo "Installazione dipendenze essenziali..."
-      pip install buildozer cython 
-      sudo apt update
-      # Installazione dei tool necessari AGGIUNTIVI (autoconf e automake) per la compilazione nativa E Java 8
-      sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-8-jdk curl autoconf automake
+    - name: Setup Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8' 
+  
+    - name: Install Buildozer, Dependencies, and Java 8
+      run: |
+        echo "Installazione dipendenze essenziali..."
+        pip install buildozer cython 
+        sudo apt update
+        # Installazione dei tool necessari AGGIUNTIVI (autoconf e automake) per la compilazione nativa E Java 8
+        sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-8-jdk curl autoconf automake
+        
+        # Aggiungi il path esplicito di Java 8 per l'uso successivo.
+        echo "JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
+        echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
+        echo "PATH=$PATH:/usr/lib/jvm/java-8-openjdk-amd64/bin" >> $GITHUB_ENV
+  
+    - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - NDK Environment Override)
+      id: android_setup
+      env:
+        JAVA_HOME: ${{ env.JAVA8_HOME }}
+      run: |
+        # 1. Definisci le directory e la versione NDK CORRETTA
+        export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
+        export NDK_VER=25c 
+        # Path NDK COMPLETO: usiamo la convenzione android-ndk-rXX che p4a preferisce
+        export FINAL_NDK_FOLDER="/home/runner/.buildozer/android/platform/android-ndk-r${NDK_VER}"
+        
+        # PULIZIA AGGRESSIVA INIZIALE: Rimuove OGNI cartella NDK precedente o mal nominata
+        echo "Pulizia aggressiva di tutte le installazioni NDK precedenti e potenzialmente problematiche..."
+        rm -rf /home/runner/.buildozer/android/platform/android-ndk*
+        
+        mkdir -p "$SDK_DIR"
+  
+        # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
+        echo "Forzatura della versione NDK, API e log_level=2 in buildozer.spec..."
+        # Rimuove TUTTE le righe che potrebbero contenere le configurazioni vecchie o duplicati
+        sed -i '/android.ndk/d' buildozer.spec
+        sed -i '/android.api/d' buildozer.spec
+        sed -i '/log_level/d' buildozer.spec 
+        
+        # Aggiunge i valori corretti
+        echo "android.ndk = $NDK_VER" >> buildozer.spec
+        echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
+        echo "android.api = 28" >> buildozer.spec
+        echo "log_level = 2" >> buildozer.spec
+        echo "buildozer.spec modificato con successo."
+        
+        # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
+        echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
+        wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
+        unzip -q android-cmdline.zip -d "$SDK_DIR"
+        rm android-cmdline.zip
+        
+        export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
+        
+        if [ ! -f "$SDK_TOOLS_BIN" ]; then
+           echo "ERRORE CRITICO: sdkmanager non trovato al path atteso. Path cercato: $SDK_TOOLS_BIN"
+           exit 1
+        fi
+        
+        # 3. BYPASS LICENZA e installazione SDK
+        echo "Creazione forzata di TUTTI i file di licenza per bypassare OGNI prompt..."
+        mkdir -p "$SDK_DIR/licenses"
+        # Licenze comuni per Android SDK
+        LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\nd975f826639434f7480e1c2777176d7fae9a4f4d\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
+        echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
+        echo "33b6a67a0746816094254b1e9564177d1a932d43" > "$SDK_DIR/licenses/google-gapps-license"
+  
+        echo "Installazione forzata dei pacchetti SDK (Build Tools 30.0.3, Platform Tools e API 28 stabile)..."
+        # Assicurati che sdkmanager sia eseguibile
+        chmod +x "$SDK_TOOLS_BIN"
+        # Esegui installazione
+        "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28" --sdk_root="$SDK_DIR"
+  
+        # 4. Scarica e Unzip l'NDK r25c
+        echo "Download e installazione manuale di NDK $NDK_VER (usando curl)..."
+        NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
+        NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
+        # -f in curl garantisce che l'errore di download fallisca lo script
+        curl -L -f -o android-ndk.zip "$NDK_URL"
+        
+        # Unzip la cartella NDK r25c (che si chiama 'android-ndk-r25c') direttamente nella cartella platform.
+        # Questo assicura che il path diventi /home/runner/.buildozer/android/platform/android-ndk-r25c
+        unzip -q android-ndk.zip -d /home/runner/.buildozer/android/platform/
+        rm android-ndk.zip
+  
+        echo "NDK installato con successo in $FINAL_NDK_FOLDER"
+        
+        # 5. Settaggio delle variabili d'ambiente globali GITHUB_ENV
+        echo "Settaggio Variabili d'Ambiente NDK/SDK (path NDK aggiornato)..."
+        echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+        echo "ANDROID_API=28" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+        echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+        echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH # Aggiunge platform-tools al PATH
+  
+        # 6. PULIZIA ESTREMA E PREPARAZIONE
+        echo "Pulizia estrema delle cartelle build precedenti..."
+        rm -rf .buildozer/android/platform/build-*
+        rm -rf .buildozer/android/platform/dist-*
+        
+        # *** COMANDO CRITICO: Pulizia della cache di python-for-android ***
+        echo "Pulizia della cache python-for-android (~/.p4a)"
+        rm -rf ~/.p4a 
+        
+        echo "Esecuzione rapida di buildozer android update forzando il PATH NDK..."
+        
+        # *** FORZATURA TOTALE DELL'AMBIENTE SUL COMANDO UPDATE ***
+        ANDROID_NDK=$FINAL_NDK_FOLDER NDK_HOME=$FINAL_NDK_FOLDER buildozer android update
+  
+    - name: Patch Libffi and Finalize Setup
+      if: success()
+      env:
+        # Riferimento al path NDK forzato per la patch
+        ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
+        NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
+      run: |
+        echo "Applicazione della patch per libffi/autoreconf..."
+        # Ricerca della directory build-hacks: deve contenere la cartella libffi. 
+        # La ricerca è necessaria perché il nome della cartella build-hacks può variare (es. build-hacks-android-28)
+        HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks*' -type d -print -quit)
+        
+        if [ -d "$HACKS_DIR" ]; then
+           echo "Directory build-hacks trovata: $HACKS_DIR"
+           # Usiamo sed per commentare la riga che causa problemi con toolchain vecchie
+           sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
+           echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4 (Commentato LT_SYS_SYMBOL_USCORE)."
+        else
+           echo "ATTENZIONE: Directory build-hacks non trovata. Continuo. Potrebbe non essere un problema se p4a non ha ancora scaricato l'NDK (ma lo dovrebbe aver fatto nello step precedente)."
+        fi
+  
+    - name: Compile APK via Buildozer (Release Finale)
+      if: success()
+      env:
+        JAVA_HOME: ${{ env.JAVA8_HOME }}
+        ANDROID_API: 28 
+        # FORZATURA TOTALE SULLA COMPILAZIONE FINALE
+        ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
+        NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
+        P4A_COMPILE_ENDIAN_SINGLE: 1 
+        ANDROID_SDK_IGNORE_LICENSES: 1 
+      run: |
+        echo "Avvio della compilazione finale (buildozer android release)..."
+        buildozer android release
       
-      # Aggiungi il path esplicito di Java 8 per l'uso successivo.
-      echo "JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> $GITHUB_ENV
-      echo "JAVA8_BIN=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java" >> $GITHUB_ENV
-      echo "PATH=$PATH:/usr/lib/jvm/java-8-openjdk-amd64/bin" >> $GITHUB_ENV
-
-  - name: Manual Android SDK/NDK Setup (ULTIMATE FIX - NDK Environment Override)
-    id: android_setup
-    env:
-      JAVA_HOME: ${{ env.JAVA8_HOME }}
-    run: |
-      # 1. Definisci le directory e la versione NDK CORRETTA
-      export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
-      export NDK_VER=25c 
-      # Path NDK COMPLETO: usiamo la convenzione android-ndk-rXX che p4a preferisce
-      export FINAL_NDK_FOLDER="/home/runner/.buildozer/android/platform/android-ndk-r${NDK_VER}"
-      
-      # PULIZIA AGGRESSIVA INIZIALE: Rimuove OGNI cartella NDK precedente o mal nominata
-      echo "Pulizia aggressiva di tutte le installazioni NDK precedenti e potenzialmente problematiche..."
-      rm -rf /home/runner/.buildozer/android/platform/android-ndk*
-      
-      mkdir -p "$SDK_DIR"
-
-      # 0. CORREZIONE CRITICA DEL FILE BUILDOZER.SPEC
-      echo "Forzatura della versione NDK, API e log_level=2 in buildozer.spec..."
-      # Rimuove TUTTE le righe che potrebbero contenere le configurazioni vecchie o duplicati
-      sed -i '/android.ndk/d' buildozer.spec
-      sed -i '/android.api/d' buildozer.spec
-      sed -i '/log_level/d' buildozer.spec 
-      
-      # Aggiunge i valori corretti
-      echo "android.ndk = $NDK_VER" >> buildozer.spec
-      echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
-      echo "android.api = 28" >> buildozer.spec
-      echo "log_level = 2" >> buildozer.spec
-      echo "buildozer.spec modificato con successo."
-      
-      # 2. Scarica e Unzip l'SDK Command Line Tools (CORREZIONE DEL PATH)
-      echo "Download e installazione manuale dell'SDK Command Line Tools LEGACY..."
-      wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O android-cmdline.zip
-      unzip -q android-cmdline.zip -d "$SDK_DIR"
-      rm android-cmdline.zip
-      
-      export SDK_TOOLS_BIN="$SDK_DIR/tools/bin/sdkmanager"
-      
-      if [ ! -f "$SDK_TOOLS_BIN" ]; then
-         echo "ERRORE CRITICO: sdkmanager non trovato al path atteso. Path cercato: $SDK_TOOLS_BIN"
-         exit 1
-      fi
-      
-      # 3. BYPASS LICENZA e installazione SDK
-      echo "Creazione forzata di TUTTI i file di licenza per bypassare OGNI prompt..."
-      mkdir -p "$SDK_DIR/licenses"
-      # Licenze comuni per Android SDK
-      LICENSES_CONTENT="8483b2796c466310f67491d90184aefd8f081498\nd975f826639434f7480e1c2777176d7fae9a4f4d\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" 
-      echo -e "$LICENSES_CONTENT" > "$SDK_DIR/licenses/android-sdk-license"
-      echo "33b6a67a0746816094254b1e9564177d1a932d43" > "$SDK_DIR/licenses/google-gapps-license"
-
-      echo "Installazione forzata dei pacchetti SDK (Build Tools 30.0.3, Platform Tools e API 28 stabile)..."
-      # Assicurati che sdkmanager sia eseguibile
-      chmod +x "$SDK_TOOLS_BIN"
-      # Esegui installazione
-      "$SDK_TOOLS_BIN" "platform-tools" "build-tools;30.0.3" "platforms;android-28" --sdk_root="$SDK_DIR"
-
-      # 4. Scarica e Unzip l'NDK r25c
-      echo "Download e installazione manuale di NDK $NDK_VER (usando curl)..."
-      NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
-      NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
-      # -f in curl garantisce che l'errore di download fallisca lo script
-      curl -L -f -o android-ndk.zip "$NDK_URL"
-      
-      # Unzip la cartella NDK r25c (che si chiama 'android-ndk-r25c') direttamente nella cartella platform.
-      # Questo assicura che il path diventi /home/runner/.buildozer/android/platform/android-ndk-r25c
-      unzip -q android-ndk.zip -d /home/runner/.buildozer/android/platform/
-      rm android-ndk.zip
-
-      echo "NDK installato con successo in $FINAL_NDK_FOLDER"
-      
-      # 5. Settaggio delle variabili d'ambiente globali GITHUB_ENV
-      echo "Settaggio Variabili d'Ambiente NDK/SDK (path NDK aggiornato)..."
-      echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-      echo "ANDROID_API=28" >> $GITHUB_ENV
-      echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
-      echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
-      echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH # Aggiunge platform-tools al PATH
-
-      # 6. PULIZIA ESTREMA E PREPARAZIONE
-      echo "Pulizia estrema delle cartelle build precedenti..."
-      rm -rf .buildozer/android/platform/build-*
-      rm -rf .buildozer/android/platform/dist-*
-      
-      # *** COMANDO CRITICO: Pulizia della cache di python-for-android ***
-      echo "Pulizia della cache python-for-android (~/.p4a)"
-      rm -rf ~/.p4a 
-      
-      echo "Esecuzione rapida di buildozer android update forzando il PATH NDK..."
-      
-      # *** FORZATURA TOTALE DELL'AMBIENTE SUL COMANDO UPDATE ***
-      ANDROID_NDK=$FINAL_NDK_FOLDER NDK_HOME=$FINAL_NDK_FOLDER buildozer android update
-
-  - name: Patch Libffi and Finalize Setup
-    if: success()
-    env:
-      # Riferimento al path NDK forzato per la patch
-      ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
-      NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
-    run: |
-      echo "Applicazione della patch per libffi/autoreconf..."
-      # Ricerca della directory build-hacks: deve contenere la cartella libffi. 
-      # La ricerca è necessaria perché il nome della cartella build-hacks può variare (es. build-hacks-android-28)
-      HACKS_DIR=$(find /home/runner/.buildozer/android/platform -name 'build-hacks*' -type d -print -quit)
-      
-      if [ -d "$HACKS_DIR" ]; then
-         echo "Directory build-hacks trovata: $HACKS_DIR"
-         # Usiamo sed per commentare la riga che causa problemi con toolchain vecchie
-         sed -i 's|LT_SYS_SYMBOL_USCORE|#LT_SYS_SYMBOL_USCORE|g' "$HACKS_DIR/libffi/acinclude.m4"
-         echo "Patch applicata a $HACKS_DIR/libffi/acinclude.m4 (Commentato LT_SYS_SYMBOL_USCORE)."
-      else
-         echo "ATTENZIONE: Directory build-hacks non trovata. Continuo. Potrebbe non essere un problema se p4a non ha ancora scaricato l'NDK (ma lo dovrebbe aver fatto nello step precedente)."
-      fi
-
-  - name: Compile APK via Buildozer (Release Finale)
-    if: success()
-    env:
-      JAVA_HOME: ${{ env.JAVA8_HOME }}
-      ANDROID_API: 28 
-      # FORZATURA TOTALE SULLA COMPILAZIONE FINALE
-      ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
-      NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
-      P4A_COMPILE_ENDIAN_SINGLE: 1 
-      ANDROID_SDK_IGNORE_LICENSES: 1 
-    run: |
-      echo "Avvio della compilazione finale (buildozer android release)..."
-      buildozer android release
-    
-  # --- FIRMA E UPLOAD ---
-  - name: Decode Keystore
-    if: success()
-    run: |
-      echo "Decodifica del keystore dalla variabile secret..."
-      echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
-
-  - name: Sign APK
-    if: success()
-    env:
-      JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per jarsigner
-    run: |
-      APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
-      
-      if [ -z "$APK_PATH" ]; then
-        echo "ERRORE: APK non trovato per la firma. Uscita."
-        exit 1
-      fi
-
-      echo "Firma dell'APK non firmato: $APK_PATH"
-      # Indentazione e virgolette corrette
-      jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
-        -keystore android.keystore \
-        -storepass '${{ secrets.KEYSTORE_PASS }}' \
-        $APK_PATH ${{ secrets.KEY_ALIAS }} \
-        -keypass '${{ secrets.KEY_PASS }}'
-
-  - name: Upload APK
-    if: success()
-    uses: actions/upload-artifact@v4
-    with:
-      name: my-app-apk-release
-      path: ./bin/*.apk
-
+    # --- FIRMA E UPLOAD ---
+    - name: Decode Keystore
+      if: success()
+      run: |
+        echo "Decodifica del keystore dalla variabile secret..."
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+  
+    - name: Sign APK
+      if: success()
+      env:
+        JAVA_HOME: ${{ env.JAVA8_HOME }} # Forza Java 8 per jarsigner
+      run: |
+        APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+        
+        if [ -z "$APK_PATH" ]; then
+          echo "ERRORE: APK non trovato per la firma. Uscita."
+          exit 1
+        fi
+  
+        echo "Firma dell'APK non firmato: $APK_PATH"
+        # Indentazione e virgolette corrette
+        jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore android.keystore \
+          -storepass '${{ secrets.KEYSTORE_PASS }}' \
+          $APK_PATH ${{ secrets.KEY_ALIAS }} \
+          -keypass '${{ secrets.KEY_PASS }}'
+  
+    - name: Upload APK
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-app-apk-release
+        path: ./bin/*.apk
