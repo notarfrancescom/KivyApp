@@ -21,10 +21,11 @@ jobs:
   
     - name: Install Buildozer, Dependencies, and Java 8
       run: |
-        echo "Installazione dipendenze essenziali..."
-        pip install buildozer cython 
+        # Installa Cython versione 0.29.36 (compatibile con pyjnius/kivy vecchi) PRIMA di buildozer
+        pip install "cython<3" buildozer 
+        
         sudo apt update
-        # Installazione dei tool necessari AGGIUNTIVI (autoconf e automake) per la compilazione nativa E Java 8
+        # Installazione dei tool necessari per la compilazione nativa E Java 8
         sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-8-jdk curl autoconf automake
         
         # Aggiungi il path esplicito di Java 8 per l'uso successivo.
