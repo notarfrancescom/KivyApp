@@ -52,9 +52,13 @@ jobs:
           rm android-cmdline.zip
 
           # Fix directory structure for sdkmanager
-          if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
+          if [ -d "$SDK_DIR/cmdline-tools/bin" ]; then
               mkdir -p "$SDK_DIR/cmdline-tools/latest"
               mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
+          elif [ -d "$SDK_DIR/cmdline-tools/latest" ]; then
+              echo "Struttura già corretta, nessuna modifica necessaria."
+          else
+              echo "Errore: struttura imprevista dei command line tools."
           fi
 
           # Symlink per compatibilità Buildozer
