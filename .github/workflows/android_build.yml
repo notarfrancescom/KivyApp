@@ -1,4 +1,4 @@
-name: Android CI Buildozer Manual (Java 17 Fix)
+name: Android CI Buildozer Manual (Java 17 Fix - Duplicate Spec Fix)
 
 on:
   push:
@@ -17,13 +17,13 @@ jobs:
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # Aggiornato a 3.10 per compatibilità generale migliore
+          python-version: '3.10' 
 
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
           pip install buildozer cython 
           sudo apt update
-          # Installazione dei tool necessari. NOTA: Usiamo openjdk-17-jdk
+          # Installazione dei tool necessari
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
           
           # Imposta Java 17 come default
@@ -44,8 +44,7 @@ jobs:
           mkdir -p "$SDK_DIR"
           mkdir -p "$NDK_DIR"
 
-          # 2. Scarica Command Line Tools (Versione più recente compatibile con Java 17)
-          # Usiamo la versione 11076708 (latest) che supporta Java 17+
+          # 2. Scarica Command Line Tools (Versione 11076708 - Java 17 compatible)
           echo "Download SDK Command Line Tools..."
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O android-cmdline.zip
           unzip -q android-cmdline.zip -d "$SDK_DIR"
@@ -87,15 +86,22 @@ jobs:
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-          # 6. Configurazione buildozer.spec
-          sed -i '/android.ndk/d' buildozer.spec
-          sed -i '/android.api/d' buildozer.spec
+          # 6. Configurazione buildozer.spec (CLEANUP ROBUSTO CON REGEX)
+          echo "Pulizia e configurazione di buildozer.spec..."
+          # Rimuove righe duplicate (commentate o meno)
+          sed -i '/^\s*#\?\s*android.ndk\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*android.ndk_path\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*android.api\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*log_level\s*=/d' buildozer.spec
+          
+          # Aggiunge i valori alla fine
+          echo "" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
           echo "android.ndk = $NDK_VER" >> buildozer.spec
           echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
           echo "log_level = 2" >> buildozer.spec
           
-          # 7. Pulizia
+          # 7. Pulizia Cache
           rm -rf ~/.p4a
           rm -rf .buildozer
 
@@ -126,6 +132,10 @@ jobs:
 
       - name: Upload APK
         if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ./bin/*.apk
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
