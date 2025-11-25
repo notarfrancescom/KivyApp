@@ -136,7 +136,3 @@ jobs:
         with:
           name: my-app-apk-release
           path: ./bin/*.apk
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-app-apk-release
-          path: ./bin/*.apk
