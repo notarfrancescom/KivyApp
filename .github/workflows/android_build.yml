@@ -52,6 +52,13 @@ jobs:
         run: |
           # Pulizia preventiva
           buildozer android clean
+
+      - name: 💣 Clean Buildozer Cache (Force p4a re-download)
+        run: |
+          # Rimuovi la cartella locale di buildozer nel progetto
+          rm -rf .buildozer
+          # Rimuovi la cache globale di buildozer che contiene i download
+          rm -rf ~/.buildozer
           
           # Esecuzione del build con yes pipe per sicurezza su prompt imprevisti
           # L'opzione --verbose ci aiuta a vedere cosa succede
