@@ -55,7 +55,7 @@ jobs:
           if [ -d "$SDK_DIR/cmdline-tools/bin" ]; then
               mkdir -p "$SDK_DIR/cmdline-tools/latest"
               mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
-          elif [ -d "$SDK_DIR/cmdline-tools/latest" ]; then
+          elif [ -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
               echo "Struttura già corretta, nessuna modifica necessaria."
           else
               echo "Errore: struttura imprevista dei command line tools."
@@ -117,11 +117,3 @@ jobs:
             --ks-pass pass:${{ secrets.KEYSTORE_PASS }} \
             --key-pass pass:${{ secrets.KEY_PASS }} \
             --key ${{ secrets.KEY_ALIAS }} \
-            $APK_PATH
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-app-apk-release
-          path: ./bin/*.apk
