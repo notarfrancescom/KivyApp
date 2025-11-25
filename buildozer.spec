@@ -1,71 +1,65 @@
+
 [app]
 
-# (str) Title of your application
+# Titolo dell'app
 title = My Application
 
-# (str) Package name
+# Nome del pacchetto
 package.name = myapp
 
-# (str) Package domain (needed for android/ios packaging)
+# Dominio del pacchetto
 package.domain = org.test
 
-# (str) Source code where the main.py live
+# Directory sorgente
 source.dir = .
 
-# (list) Source files to include
+# File da includere
 source.include_exts = py,png,jpg,kv,atlas
 
-# (str) Application versioning
+# Versione dell'app
 version = 0.1
 
-# (list) Application requirements
+# Requisiti (aggiungi qui eventuali librerie extra)
 requirements = python3,kivy
 
-# (str) Versione Python da compilare (CRUCIALE per evitare errori NDK)
-python.version = 3.8  # ALLINEATO AL RUNNER DI GITHUB ACTIONS
+# Versione Python (allineata al workflow)
+python.version = 3.10
 
-# (list) Supported orientations
+# Orientamento supportato
 orientation = portrait
 
-#
-# Android specific
-#
-
-# (bool) Indicate if the application should be fullscreen or not
+# Fullscreen
 fullscreen = 1
 
-# (list) Permissions
+# Permessi Android (aggiungi se servono altri)
 android.permissions = android.permission.INTERNET
 
-# (int) Target Android API, dovrebbe essere il più alto possibile.
-android.api = 28
+# Target API (aggiornato)
+android.api = 34
 
-# (int) Minimum API your APK / AAB will support.
+# Minima API supportata
 android.minapi = 21
 
-# (str) Android NDK version to use
-android.ndk = 21b
+# Versione NDK (aggiornata)
+android.ndk = 25c
 
-# (int) Android NDK API to use. Deve corrispondere a android.minapi.
+# Percorso NDK (aggiornato)
+android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25c
+
+# API NDK
 android.ndk_api = 21
 
-# (list) The Android archs to build for
+# Architetture supportate
 android.archs = arm64-v8a, armeabi-v7a
 
-# (bool) enables Android auto backup feature
+# Backup
 android.allow_backup = True
 
 
 [buildozer]
 
-# (int) Log level (2 = debug, utile per il CI)
+# Log level
 log_level = 2
 
-# (int) Display warning if buildozer is run as root (1 = True)
+# Avviso se root
 warn_on_root = 0
-
-# (str) FORZA L'USO DI UN BRANCH PIÙ STABILE DI PYTHON-FOR-ANDROID
-# p4a.branch = release
-
-# (str) Aggiungiamo l'URL della fork nota per contenere i fix di build
-# p4a.url = https://github.com/inclement/python-for-android
