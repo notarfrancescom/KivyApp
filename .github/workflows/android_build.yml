@@ -52,11 +52,14 @@ jobs:
           rm android-cmdline.zip
 
           # Fix directory structure for sdkmanager
-          mkdir -p "$SDK_DIR/cmdline-tools/latest"
-          mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
-          # Symlink for Buildozer compatibility
+          if [ ! -d "$SDK_DIR/cmdline-tools/latest" ]; then
+              mkdir -p "$SDK_DIR/cmdline-tools/latest"
+              mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
+          fi
+
+          # Symlink per compatibilità Buildozer
           mkdir -p "$SDK_DIR/tools/bin"
-          ln -s "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
+          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
 
           SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
 
@@ -83,6 +86,7 @@ jobs:
           sed -i '/^\s*android.api\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk_path\s*=/d' buildozer.spec
+          sed -i '/^\s*python.version\s*=/d' buildozer.spec
           echo "" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
           echo "android.ndk = $NDK_VER" >> buildozer.spec
