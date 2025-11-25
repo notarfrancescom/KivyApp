@@ -1,4 +1,4 @@
-name: Android CI Buildozer Automatic
+name: Android CI Buildozer Manual (Java 17 Fix - Duplicate Spec Fix)
 
 on:
   push:
@@ -9,53 +9,130 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+      
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.10' 
 
-      - name: Install System Dependencies
+      - name: Install Buildozer, Dependencies, and Java 17
         run: |
+          pip install buildozer cython 
           sudo apt update
-          # Installiamo le dipendenze essenziali per Kivy e Buildozer
-          sudo apt install -y build-essential git zip unzip libtool m4 \
-                              openjdk-17-jdk curl autoconf automake \
-                              zlib1g-dev libjpeg-dev libpng-dev \
-                              libfreetype6-dev libsdl2-dev libsdl2-image-dev \
-                              libsdl2-mixer-dev libsdl2-ttf-dev \
-                              libportmidi-dev libswscale-dev libavformat-dev \
-                              libavcodec-dev
+          # Installazione dei tool necessari
+          sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
           
-          # Aggiorniamo pip e installiamo buildozer e cython
-          pip install --upgrade pip
-          pip install buildozer cython
-
-      - name: Setup Java Home
-        run: |
+          # Imposta Java 17 come default
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "JAVA_HOME_17_X64=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
 
-      - name: Compile APK via Buildozer (Release Finale)
-        if: success()
+      - name: Manual Android SDK/NDK Setup (Java 17)
+        id: android_setup
         env:
-          JAVA_HOME: ${{ env.JAVA8_HOME }}
-          ANDROID_API: 28 
-          ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
-          NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+        run: |
+          # 1. Definisci le directory e la versione NDK
+          export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
+          export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
+          export NDK_VER=25c 
+          export FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
+          
+          mkdir -p "$SDK_DIR"
+          mkdir -p "$NDK_DIR"
+
+          # 2. Scarica Command Line Tools (Versione 11076708 - Java 17 compatible)
+          echo "Download SDK Command Line Tools..."
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O android-cmdline.zip
+          unzip -q android-cmdline.zip -d "$SDK_DIR"
+          rm android-cmdline.zip
+          
+          # Sposta nella struttura corretta cmdline-tools/latest/bin
+          mkdir -p "$SDK_DIR/cmdline-tools"
+          mv "$SDK_DIR/cmdline-tools" "$SDK_DIR/cmdline-tools-temp"
+          mkdir -p "$SDK_DIR/cmdline-tools/latest"
+          mv "$SDK_DIR/cmdline-tools-temp/"* "$SDK_DIR/cmdline-tools/latest/"
+          rmdir "$SDK_DIR/cmdline-tools-temp"
+
+          export SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          
+          # 3. Licenze e Installazione Pacchetti
+          echo "Accettazione licenze..."
+          yes | "$SDK_TOOLS_BIN" --licenses > /dev/null
+          
+          echo "Installazione pacchetti SDK..."
+          "$SDK_TOOLS_BIN" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
+          # 4. Scarica NDK r25c
+          echo "Download NDK $NDK_VER..."
+          NDK_ZIP_NAME="android-ndk-r${NDK_VER}-linux.zip"
+          NDK_URL="https://dl.google.com/android/repository/$NDK_ZIP_NAME"
+          curl -L -f -o android-ndk.zip "$NDK_URL"
+          unzip -q android-ndk.zip -d "$NDK_DIR"
+          rm android-ndk.zip
+
+          EXTRACTED_NDK_FOLDER="$NDK_DIR/android-ndk-r${NDK_VER}"
+          mv "$EXTRACTED_NDK_FOLDER" "$FINAL_NDK_FOLDER"
+          
+          # 5. Export Variabili
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "ANDROID_NDK=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
+          echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+          # 6. Configurazione buildozer.spec (CLEANUP ROBUSTO CON REGEX)
+          echo "Pulizia e configurazione di buildozer.spec..."
+          # Rimuove righe duplicate (commentate o meno)
+          sed -i '/^\s*#\?\s*android.ndk\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*android.ndk_path\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*android.api\s*=/d' buildozer.spec
+          sed -i '/^\s*#\?\s*log_level\s*=/d' buildozer.spec
+          
+          # Aggiunge i valori alla fine
+          echo "" >> buildozer.spec
+          echo "android.api = 34" >> buildozer.spec
+          echo "android.ndk = $NDK_VER" >> buildozer.spec
+          echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
+          echo "log_level = 2" >> buildozer.spec
+          
+          # 7. Pulizia Cache
+          rm -rf ~/.p4a
+          rm -rf .buildozer
+
+      - name: Compile APK via Buildozer
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           P4A_COMPILE_ENDIAN_SINGLE: 1 
-          ANDROID_SDK_IGNORE_LICENSES: 1 
-          # Sblocca la compilazione con org.test
-          BUILDOZER_ALLOW_ORG_TEST_DOMAIN: 1 
+          BUILDOZER_ALLOW_ORG_TEST_DOMAIN: 1
         run: |
           buildozer android release
+        
+      - name: Decode Keystore
+        if: success()
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
+
+      - name: Sign APK
+        if: success()
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" -print -quit)
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+            -keystore android.keystore \
+            -storepass '${{ secrets.KEYSTORE_PASS }}' \
+            $APK_PATH ${{ secrets.KEY_ALIAS }} \
+            -keypass '${{ secrets.KEY_PASS }}'
 
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          path: bin/*.apk
+          path: ./bin/*.apk
