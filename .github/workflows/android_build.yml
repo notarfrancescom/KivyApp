@@ -108,7 +108,7 @@ jobs:
         run: |
           set -e
           echo "Avvio compilazione APK..."
-          buildozer android release || { echo "Errore: Buildozer non ha completato la build"; exit 1; }
+          buildozer android release --package-format apk || { echo "Errore: Buildozer non ha completato la build"; exit 1; }
 
           # Verifica se l'APK è stato creato
           APK_PATH=$(find . -name "*-release-unsigned.apk" -print -quit)
