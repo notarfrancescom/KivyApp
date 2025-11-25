@@ -1,5 +1,5 @@
 
-name: Android CI Buildozer (Java 17 + SDK Fix + Debug APK)
+name: Android CI Buildozer (Java 17 + SDK Fix + Debug APK + pyjnius Fix)
 
 on:
   push:
@@ -31,7 +31,8 @@ jobs:
 
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
-          pip install buildozer cython
+          # Fix pyjnius error: Cython < 3.0
+          pip install "cython<3.0" buildozer
           sudo apt update
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
@@ -93,48 +94,7 @@ jobs:
           sed -i '/^\s*android.ndk\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk_path\s*=/d' buildozer.spec
           sed -i '/^\s*python.version\s*=/d' buildozer.spec
+          sed -i '/^\s*p4a.branch\s*=/d' buildozer.spec
           echo "" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
           echo "android.ndk = $NDK_VER" >> buildozer.spec
-          echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
-          echo "python.version = 3.10" >> buildozer.spec
-
-      - name: Compile APK via Buildozer
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-        run: |
-          buildozer android release
-
-      - name: Debug APK path
-        run: |
-          echo "Contenuto della cartella bin:"
-          ls -R ./bin || echo "Cartella bin non trovata"
-          echo "Contenuto della cartella .buildozer:"
-          ls -R .buildozer/android/platform || echo "Cartella .buildozer non trovata"
-
-      - name: Decode Keystore
-        if: success()
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android.keystore
-
-      - name: Sign APK with apksigner
-        if: success()
-        run: |
-          APK_PATH=$(find . -name "*-release-unsigned.apk" -print -quit)
-          if [ -z "$APK_PATH" ]; then
-            echo "Errore: APK non trovato!"
-            exit 1
-          fi
-          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
-            --ks android.keystore \
-            --ks-pass pass:${{ secrets.KEYSTORE_PASS }} \
-            --key-pass pass:${{ secrets.KEY_PASS }} \
-            --key ${{ secrets.KEY_ALIAS }} \
-            $APK_PATH
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-app-apk-release
-          path: '**/*.apk'
