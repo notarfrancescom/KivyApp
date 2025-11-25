@@ -51,27 +51,17 @@ jobs:
           unzip -q android-cmdline.zip -d "$SDK_DIR"
           rm android-cmdline.zip
 
-          # Fix struttura variabile
-          if [ -d "$SDK_DIR/cmdline-tools/cmdline-tools/bin" ]; then
-              mkdir -p "$SDK_DIR/cmdline-tools/latest"
-              mv "$SDK_DIR/cmdline-tools/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
-          elif [ -d "$SDK_DIR/cmdline-tools/bin" ]; then
-              mkdir -p "$SDK_DIR/cmdline-tools/latest"
-              mv "$SDK_DIR/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
-          fi
-
-          # Symlink per compatibilità Buildozer
-          mkdir -p "$SDK_DIR/tools/bin"
-          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
-
-          SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
-
           # Verifica presenza sdkmanager
+          SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
               echo "Errore: sdkmanager non trovato!"
               ls -R "$SDK_DIR"
               exit 1
           fi
+
+          # Symlink per compatibilità Buildozer
+          mkdir -p "$SDK_DIR/tools/bin"
+          ln -sf "$SDK_TOOLS_BIN" "$SDK_DIR/tools/bin/sdkmanager"
 
           # Accept licenses and install SDK packages
           yes | "$SDK_TOOLS_BIN" --licenses > /dev/null
@@ -121,3 +111,13 @@ jobs:
           $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
             --ks android.keystore \
             --ks-pass pass:${{ secrets.KEYSTORE_PASS }} \
+            --key-pass pass:${{ secrets.KEY_PASS }} \
+            --key ${{ secrets.KEY_ALIAS }} \
+            $APK_PATH
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-app-apk-release
+          path: ./bin/*.apk
