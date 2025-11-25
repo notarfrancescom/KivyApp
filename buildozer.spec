@@ -8,7 +8,7 @@ title = My Application
 package.name = myapp
 
 # Dominio del pacchetto
-package.domain = org.test
+package.domain = com.vino.kivyapp
 
 # Directory sorgente
 source.dir = .
