@@ -39,31 +39,19 @@ jobs:
         run: |
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
 
-      - name: Build with Buildozer
+      - name: Compile APK via Buildozer (Release Finale)
+        if: success()
         env:
-          # Questa variabile dice a Buildozer di accettare automaticamente le licenze SDK
-          # È la chiave magica che sostituisce tutto il lavoro manuale che abbiamo fatto.
-          PACKAGES_PATH: ${{ github.workspace }}/.buildozer/android/packages
-          ANDROIDSDK: ${{ github.workspace }}/.buildozer/android/platform/android-sdk
-          ANDROIDNDK: ${{ github.workspace }}/.buildozer/android/platform/android-ndk-r25b
-          # Accettazione automatica licenze (feature di p4a)
-          ACCEPT_SDK_LICENSE: "yes" 
-          BUILDOZER_ALLOW_ORG_TEST_DOMAIN: 1
-                            
+          JAVA_HOME: ${{ env.JAVA8_HOME }}
+          ANDROID_API: 28 
+          ANDROID_NDK: /home/runner/.buildozer/android/platform/android-ndk-r25c
+          NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk-r25c
+          P4A_COMPILE_ENDIAN_SINGLE: 1 
+          ANDROID_SDK_IGNORE_LICENSES: 1 
+          # Sblocca la compilazione con org.test
+          BUILDOZER_ALLOW_ORG_TEST_DOMAIN: 1 
         run: |
-          # Pulizia preventiva
-          buildozer android clean
-
-      - name: 💣 Clean Buildozer Cache (Force p4a re-download)
-        run: |
-          # Rimuovi la cartella locale di buildozer nel progetto
-          rm -rf .buildozer
-          # Rimuovi la cache globale di buildozer che contiene i download
-          rm -rf ~/.buildozer
-          
-          # Esecuzione del build con yes pipe per sicurezza su prompt imprevisti
-          # L'opzione --verbose ci aiuta a vedere cosa succede
-          yes | buildozer -v android release
+          buildozer android release
 
       - name: Upload APK
         if: success()
