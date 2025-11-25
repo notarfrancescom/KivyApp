@@ -50,13 +50,13 @@ jobs:
           ACCEPT_SDK_LICENSE: "yes" 
           BUILDOZER_ALLOW_ORG_TEST_DOMAIN: 1
           
-          python_for_android_dir=$HOME/.buildozer/android/platform/python-for-android
+python_for_android_dir=$HOME/.buildozer/android/platform/python-for-android
 
 
-          if [ ! -d "$python_for_android_dir" ]; then
+if [ ! -d "$python_for_android_dir" ]; then
 
 
-          echo "Cloning python-for-android to $python_for_android_dir"
+echo "Cloning python-for-android to $python_for_android_dir"
 
 
 git clone https://github.com/kivy/python-for-android.git $python_for_android_dir
