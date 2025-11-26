@@ -31,20 +31,23 @@ orientation = portrait
 # Fullscreen
 fullscreen = 1
 
-# Permessi Android (aggiungi se servono altri)
+# Permessi Android
 android.permissions = android.permission.INTERNET
 
-# Target API (aggiornato)
+# Target API
 android.api = 34
 
 # Minima API supportata
 android.minapi = 21
 
-# Versione NDK (aggiornata)
-android.ndk = 25c
+# Versione NDK (compatibile con python-for-android)
+android.ndk = 25b
 
-# Percorso NDK (aggiornato)
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25c
+# Percorso NDK
+android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25b
+
+# Percorso SDK (aggiunto)
+android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
 
 # API NDK
 android.ndk_api = 21
@@ -62,4 +65,3 @@ android.allow_backup = True
 log_level = 2
 
 # Avviso se root
-warn_on_root = 0
