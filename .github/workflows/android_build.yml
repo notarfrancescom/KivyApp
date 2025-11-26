@@ -27,12 +27,13 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
       - name: Manual Android SDK/NDK Setup
         run: |
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
-          export NDK_VER=25c
+          export NDK_VER=25b
           export FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
 
           mkdir -p "$SDK_DIR" "$NDK_DIR"
@@ -46,13 +47,18 @@ jobs:
           SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDK_TOOLS_BIN" --licenses > /dev/null
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
           curl -L -f -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip"
           unzip -q android-ndk.zip -d "$NDK_DIR"
           rm android-ndk.zip
           mv "$NDK_DIR/android-ndk-r${NDK_VER}" "$FINAL_NDK_FOLDER"
+
+          # Fix sdkmanager path for Buildozer
+          mkdir -p "$SDK_DIR/tools/bin"
+          ln -s "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
+
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
-          echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
 
       - name: Compile AAB via Buildozer
         env:
@@ -79,4 +85,3 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk-release
-          path: myapp-release.apk
