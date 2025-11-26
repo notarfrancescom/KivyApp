@@ -20,7 +20,7 @@ source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
 # Requisiti (aggiungi qui eventuali librerie extra)
-requirements = python3,kivy
+requirements = python3,kivy==2.3.1
 
 # Versione Python (allineata al workflow)
 python.version = 3.10
