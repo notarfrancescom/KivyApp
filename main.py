@@ -1303,6 +1303,41 @@ class WineApp(App):
 
         return sm
 
+    def on_stop(self):
+        """Metodo chiamato quando l'applicazione sta per chiudersi (sul segnale di stop).
+        Questo è il punto in cui tutte le risorse esterne (come le connessioni DB)
+        devono essere rilasciate.
+        """
+        print("WineApp: Avvio della chiusura esplicita delle risorse DB.")
+
+        # Chiudi i database TinyDB (il passo CRITICO)
+        # 1. Rosso
+        if self.db_red:
+            try:
+                self.db_red.close()
+                print("TinyDB Rosso chiuso.")
+            except Exception as e:
+                print(f"ATTENZIONE: Errore durante la chiusura di db_red: {e}")
+
+        # 2. Bianco
+        if self.db_white:
+            try:
+                self.db_white.close()
+                print("TinyDB Bianco chiuso.")
+            except Exception as e:
+                print(f"ATTENZIONE: Errore durante la chiusura di db_white: {e}")
+
+        # 3. Rosato
+        if self.db_pink:
+            try:
+                self.db_pink.close()
+                print("TinyDB Rosato chiuso.")
+            except Exception as e:
+                print(f"ATTENZIONE: Errore durante la chiusura di db_pink: {e}")
+
+        # Chiama sempre il metodo base
+        return super().on_stop()
+
     # metodo on_key_down
     def on_key_down(self, window, key, *args):
         """Gestisce l'evento di pressione dei tasti, in particolare il tasto 'Back' (27)."""
