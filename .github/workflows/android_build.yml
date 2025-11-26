@@ -1,5 +1,5 @@
 
-name: Android CI Buildozer (Java 17 + SDK Fix + Debug APK + Fail-Safe)
+name: Android CI Buildozer (APK Test Mode)
 
 on:
   push:
@@ -31,7 +31,6 @@ jobs:
 
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
-          # Fix pyjnius error: Cython < 3.0
           pip install "cython<3.0" buildozer
           sudo apt update
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
@@ -53,12 +52,11 @@ jobs:
           unzip -q android-cmdline.zip -d "$SDK_DIR/cmdline-tools"
           rm android-cmdline.zip
 
-          # Rinomina in latest
+          # Rename to latest
           if [ -d "$SDK_DIR/cmdline-tools/cmdline-tools" ]; then
               mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
           fi
 
-          # Verifica sdkmanager
           SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -f "$SDK_TOOLS_BIN" ]; then
               echo "Errore: sdkmanager non trovato!"
@@ -66,21 +64,17 @@ jobs:
               exit 1
           fi
 
-          # Symlink per compatibilità Buildozer
           mkdir -p "$SDK_DIR/tools/bin"
           ln -sf "$SDK_TOOLS_BIN" "$SDK_DIR/tools/bin/sdkmanager"
 
-          # Accept licenses and install SDK packages
           yes | "$SDK_TOOLS_BIN" --licenses > /dev/null
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
-          # Download NDK r25c
           curl -L -f -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip"
           unzip -q android-ndk.zip -d "$NDK_DIR"
           rm android-ndk.zip
           mv "$NDK_DIR/android-ndk-r${NDK_VER}" "$FINAL_NDK_FOLDER"
 
-          # Export environment variables
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
@@ -89,18 +83,20 @@ jobs:
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-          # Update buildozer.spec
+          # Update buildozer.spec for APK mode
           sed -i '/^\s*android.api\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk_path\s*=/d' buildozer.spec
           sed -i '/^\s*python.version\s*=/d' buildozer.spec
           sed -i '/^\s*p4a.branch\s*=/d' buildozer.spec
+          sed -i '/^\s*android.release_aab\s*=/d' buildozer.spec
           echo "" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
           echo "android.ndk = $NDK_VER" >> buildozer.spec
           echo "android.ndk_path = $FINAL_NDK_FOLDER" >> buildozer.spec
           echo "python.version = 3.10" >> buildozer.spec
           echo "p4a.branch = develop" >> buildozer.spec
+          echo "android.release_aab = False" >> buildozer.spec
 
       - name: Compile APK via Buildozer
         env:
@@ -108,9 +104,8 @@ jobs:
         run: |
           set -e
           echo "Avvio compilazione APK..."
-          buildozer android release --package-format apk || { echo "Errore: Buildozer non ha completato la build"; exit 1; }
+          buildozer android release || { echo "Errore: Buildozer non ha completato la build"; exit 1; }
 
-          # Verifica se l'APK è stato creato
           APK_PATH=$(find . -name "*-release-unsigned.apk" -print -quit)
           if [ -z "$APK_PATH" ]; then
             echo "Errore: APK non trovato dopo la compilazione!"
