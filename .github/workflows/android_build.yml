@@ -1,5 +1,5 @@
 
-name: Android CI Buildozer (APK Test Mode)
+name: Android CI Buildozer (APK Release Mode)
 
 on:
   push:
@@ -83,13 +83,14 @@ jobs:
           echo "$SDK_DIR/platform-tools" >> $GITHUB_PATH
           echo "$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-          # Update buildozer.spec for APK mode
+          # Update buildozer.spec for APK release mode
           sed -i '/^\s*android.api\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk\s*=/d' buildozer.spec
           sed -i '/^\s*android.ndk_path\s*=/d' buildozer.spec
           sed -i '/^\s*python.version\s*=/d' buildozer.spec
           sed -i '/^\s*p4a.branch\s*=/d' buildozer.spec
           sed -i '/^\s*android.release_aab\s*=/d' buildozer.spec
+          sed -i '/^\s*android.gradle_tasks\s*=/d' buildozer.spec
           echo "" >> buildozer.spec
           echo "android.api = 34" >> buildozer.spec
           echo "android.ndk = $NDK_VER" >> buildozer.spec
@@ -97,13 +98,14 @@ jobs:
           echo "python.version = 3.10" >> buildozer.spec
           echo "p4a.branch = develop" >> buildozer.spec
           echo "android.release_aab = False" >> buildozer.spec
+          echo "android.gradle_tasks = assembleRelease" >> buildozer.spec
 
       - name: Compile APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
-          echo "Avvio compilazione APK..."
+          echo "Avvio compilazione APK (release)..."
           buildozer android release || { echo "Errore: Buildozer non ha completato la build"; exit 1; }
 
           APK_PATH=$(find . -name "*-release-unsigned.apk" -print -quit)
