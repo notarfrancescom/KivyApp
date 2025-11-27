@@ -59,7 +59,7 @@ jobs:
 
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
           # Aggiungi la variabile NDK per Buildozer/P4A
-          echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
       - name: Compile AAB via Buildozer
