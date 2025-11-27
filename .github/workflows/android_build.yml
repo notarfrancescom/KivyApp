@@ -9,76 +9,95 @@ on:
 
 jobs:
   build:
+    # Buildozer richiede un ambiente Linux. Ubuntu 22.04 è eccellente.
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 1. Setup Python: Allineato alla versione 3.11 del tuo buildozer.spec
       - name: Setup Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11' # Allineato a python.version = 3.11 in buildozer.spec
 
+      # 2. Installazione di Buildozer, Dipendenze e Java 17
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
           pip install "cython<3.0" buildozer
           sudo apt update
+          # Aggiunta di pacchetti standard e installazione di Java 17 (richiesto da Buildozer/Android SDK)
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
+          
+          # Imposta JAVA_HOME e aggiunge bin alla PATH
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
           echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
+      # 3. Setup Manuale di Android SDK/NDK
+      # Questo step garantisce che i percorsi SDK e NDK siano noti e allineati 
+      # a quelli che Buildozer si aspetta nella cache (.buildozer/android/platform/)
       - name: Manual Android SDK/NDK Setup
         run: |
+          # Definizioni basate sul tuo buildozer.spec (android.ndk = 25b, android.api = 34)
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
           export NDK_VER=25b
-          export FINAL_NDK_FOLDER="$NDK_DIR/android-ndk-r$NDK_VER" # NDK path changed to match Buildozer's default structure
+          
+          # La cartella NDK finale in cui Buildozer cerca
+          export FINAL_NDK_FOLDER="$NDK_DIR/android-ndk-r$NDK_VER" 
 
+          # Crea le directory
           mkdir -p "$SDK_DIR" "$NDK_DIR"
+
+          # Scarica e configura Command Line Tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O android-cmdline.zip
           mkdir -p "$SDK_DIR/cmdline-tools"
           unzip -q android-cmdline.zip -d "$SDK_DIR/cmdline-tools"
           rm android-cmdline.zip
+          # Sposta i tool nella directory 'latest'
           if [ -d "$SDK_DIR/cmdline-tools/cmdline-tools" ]; then
               mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
           fi
+          
           SDK_TOOLS_BIN="$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"
+          
+          # Accetta le licenze (necessario)
           yes | "$SDK_TOOLS_BIN" --licenses > /dev/null
+          
+          # Installa Platform Tools e API 34 (Target API del tuo spec)
           "$SDK_TOOLS_BIN" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
+          # Scarica e scompatta l'NDK 25b (richiesto dal tuo spec)
           curl -L -f -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip"
           unzip -q android-ndk.zip -d "$NDK_DIR"
           rm android-ndk.zip
-          # Nota: l'NDK viene scompattato direttamente in $NDK_DIR/android-ndk-r25b, Buildozer lo cerca qui
           
-          # Fix sdkmanager path for Buildozer
+          # Crea il symlink di sdkmanager (Buildozer lo cerca in $SDK_DIR/tools/bin)
           mkdir -p "$SDK_DIR/tools/bin"
           ln -s "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
 
+          # Imposta le variabili d'ambiente per Buildozer
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
+          # Aggiunge i binari Android alla PATH di sistema
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
+      # 4. Compilazione DEBUG APK via Buildozer
       - name: Compile DEBUG APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
-          echo ">>> Avvio inizializzazione e pulizia implicita"
-          
-          # Inizializza l'ambiente buildozer/p4a se non esiste (se il p4a target è mancante)
-          buildozer android debug --dry-run || true 
-          
-          echo ">>> Eseguo la pulizia completa della build precedente"
-          # Ora la directory p4a dovrebbe esistere
-          buildozer android clean
           
           echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
+          # Usiamo solo il comando di build principale, che gestisce implicitamente clean e dry-run
           buildozer -v android debug 
           
           echo ">>> Ricerca APK generato"
+          # Cerca il file .apk più recente
           APK_PATH=$(find bin -name "*-debug.apk" -print -quit)
+          
           if [ -z "$APK_PATH" ]; then
             echo "Errore: APK di debug non trovato!"
             exit 1
@@ -89,6 +108,7 @@ jobs:
           cp "$APK_PATH" myapp-debug.apk
           echo "APK rinominato in myapp-debug.apk"
 
+      # 5. Upload dell'APK come Artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
