@@ -60,17 +60,21 @@ jobs:
           echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
-      - name: Compile DEBUG APK via Buildozer (Clean & Build) 
+      - name: Compile DEBUG APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
+          echo ">>> Avvio inizializzazione e pulizia implicita"
+          
+          # Inizializza l'ambiente buildozer/p4a se non esiste (se il p4a target è mancante)
+          buildozer android debug --dry-run || true 
+          
           echo ">>> Eseguo la pulizia completa della build precedente"
-          # 1. Pulizia completa per garantire una build fresca
+          # Ora la directory p4a dovrebbe esistere
           buildozer android clean
           
           echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
-          # 2. Ricompilazione (creerà nuovamente tutti i file di build, inclusi gli SDK/NDK se la cache non è usata)
           buildozer -v android debug 
           
           echo ">>> Ricerca APK generato"
