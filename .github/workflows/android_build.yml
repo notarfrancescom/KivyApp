@@ -58,15 +58,17 @@ jobs:
           ln -s "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
 
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          # Aggiungi la variabile NDK per Buildozer/P4A
+          echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
-
+          
       - name: Compile AAB via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
           echo ">>> Avvio compilazione con Buildozer"
-          buildozer -v android release
+          buildozer -v android debug
           echo ">>> Ricerca AAB generato"
           AAB_PATH=$(find . -name "*.aab" -print -quit)
           if [ -z "$AAB_PATH" ]; then
