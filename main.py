@@ -26,7 +26,7 @@ from kivy.uix.spinner import Spinner
 
 
 # Imposta la dimensione fissa della finestra
-Window.size = (320, 480)
+# Window.size = (320, 480)
 
 
 class RoundedButton(ButtonBehavior, BoxLayout):

@@ -10,25 +10,25 @@
     background_normal: 'materiale/menu_tre_linee.png'
     background_down: 'materiale/menu_tre_linee_cliccato.png'
     size_hint: None, None
-    size: 35, 25
+    size: dp(35), dp(25)
     pos_hint: {"right": 0.95, "top": 0.95}
 
 # Stile per le etichette con il colore del tema
 <RedWineLabel@Label>:
     font_name: 'materiale/comicbd.ttf'
-    font_size: 16
+    font_size: '16sp'
     bold: True
     color: 0.6, 0, 0, 1  # Rosso Scuro-Bordeaux
 
 <WhiteWineLabel@Label>:
     font_name: 'materiale/comicbd.ttf'
-    font_size: 16
+    font_size: '16sp'
     bold: True
     color: 0.7, 0.5, 0.0, 1.0  # Giallo-oro--ocra-scuro
 
 <PinkWineLabel@Label>:
     font_name: 'materiale/comicbd.ttf'
-    font_size: 16
+    font_size: '16sp'
     bold: True
     color: 0.7, 0.45, 0.6, 1.0  # malva scuro
 
@@ -43,9 +43,9 @@
 
 # Stile per il testo all'interno del menu a discesa dello Spinner
 <SpinnerOption>:
-    font_size: 10  # Regola questo valore (es. 10) in base alle tue esigenze
+    font_size: '10sp'  # Regola questo valore (es. 10) in base alle tue esigenze
     size_hint_y: None
-    height: 18
+    height: dp(18)
     # background_color: 0.1, 0.5, 0.7, 1  # Puoi anche cambiare il colore dello sfondo qui, se vuoi
 
 
@@ -55,50 +55,60 @@
 	# Rimuove la texture predefinita del bottone Kivy
 	background_normal: ''
 	background_down: ''
-	font_size: 24
+	font_size: '24sp'
 	background_color: 0.9, 0.9, 0.9, 0  # Bianco sporco e trasparenza al 100%
 	# COLORE PERSONALIZZATO (Azzurro Cielo Chiaro)
 	color: 0.529, 0.808, 0.980, 1
 
 
 # ==============================================================================
-# 1. WelcomeScreen (name: 'welcome')
+# 1. WelcomeScreen (name: 'welcome') - Layout Responsivo
 # ==============================================================================
 <WelcomeScreen>:
     name: 'welcome'
 
-    FloatLayout:
-        canvas.before:
-            Rectangle:
-                pos: self.pos
-                size: self.size
-                source: 'materiale/iniziale.png'
+    RelativeLayout:
+        size: root.size
 
-        FloatLayout: # Box che contiene il menu button tre linee e che ospita il menu che si apre
+        # 1. Immagine di Sfondo/Centrale (Contiene Bottiglia/Bicchiere e Testo "Degustazione Vino")
+        Image:
+            # Usa 'iniziale.png' per l'illustrazione completa
+            source: 'materiale/iniziale.png'
+            # Fai in modo che l'immagine occupi circa l'80% dello schermo (sia x che y)
+            size_hint: 0.85, 0.85
+            # Centra l'immagine
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            # CRUCIALE: Mantiene le proporzioni e permette lo stretch
+            allow_stretch: True
+            keep_ratio: True
+        # 3. Floating Box per il DropDown Menu (Lasciato in FloatLayout per la posizione fissa)
+        FloatLayout:
             size_hint: 1, 1
 
-            # 1. ANCORA INVISIBILE E LARGA (Per il DropDown)
+            # 3a. ANCORA INVISIBILE E LARGA (Per il DropDown)
             Label:
                 id: menu_anchor
-                # Usiamo un'etichetta o un widget generico, l'importante è che abbia una larghezza fissa.
                 size_hint: None, None
-                width: dp(150) # Larghezza effettiva per il menu aperto (es. 150 dp)
-                height: dp(1) # Altezza minima
-                # Posizionalo dove si aprirà il menu (es. in alto a destra)
+                width: dp(150)
+                height: dp(1)
                 pos_hint: {"right": 0.95, "top": 0.95}
-                color: 0, 0, 0, 0 # Lo rendiamo invisibile
+                color: 0, 0, 0, 0
 
+            # 3b. Bottone Menu Tre Linee
             MenuButton:
                 on_release: app.show_main_menu(root.ids.menu_anchor)
 
 
+        # 4. Pulsante "Inizia"
         Button:
+            # Usa il tuo background custom come prima
             background_normal: "materiale/inizia.png"
             background_down: "materiale/inizia_cliccato.png"
-            font_size: 20
-            size_hint: None, None
-            size: 100, 50
-            pos_hint: {"center_x": 0.5, "y": 0.15}
+            font_size: '20sp'
+            # Usa size_hint per la dimensione relativa (es. 40% della larghezza, 8% dell'altezza)
+            size_hint: 0.4, 0.08
+            # Posizionalo al centro orizzontale e in basso
+            pos_hint: {"center_x": 0.5, "y": 0.1}
             on_release: root.manager.current = 'selection'
 
 # ==============================================================================
