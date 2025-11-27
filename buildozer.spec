@@ -47,10 +47,10 @@ android.minapi = 21
 android.ndk = 25b
 
 # Percorso NDK
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25b
+# android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25b
 
 # Percorso SDK (aggiunto)
-android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
+# android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
 
 # API NDK
 android.ndk_api = 21
