@@ -1,4 +1,3 @@
-
 name: Android CI Buildozer (Convert AAB to APK)
 
 on:
@@ -34,7 +33,7 @@ jobs:
           export SDK_DIR=/home/runner/.buildozer/android/platform/android-sdk
           export NDK_DIR=/home/runner/.buildozer/android/platform/android-ndk
           export NDK_VER=25b
-          export FINAL_NDK_FOLDER="$NDK_DIR/$NDK_VER"
+          export FINAL_NDK_FOLDER="$NDK_DIR/android-ndk-r$NDK_VER" # NDK path changed to match Buildozer's default structure
 
           mkdir -p "$SDK_DIR" "$NDK_DIR"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O android-cmdline.zip
@@ -51,43 +50,42 @@ jobs:
           curl -L -f -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r${NDK_VER}-linux.zip"
           unzip -q android-ndk.zip -d "$NDK_DIR"
           rm android-ndk.zip
-          mv "$NDK_DIR/android-ndk-r${NDK_VER}" "$FINAL_NDK_FOLDER"
-
+          # Nota: l'NDK viene scompattato direttamente in $NDK_DIR/android-ndk-r25b, Buildozer lo cerca qui
+          
           # Fix sdkmanager path for Buildozer
           mkdir -p "$SDK_DIR/tools/bin"
           ln -s "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
 
           echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
-          # Aggiungi la variabile NDK per Buildozer/P4A
           echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
-      - name: Compile AAB via Buildozer
+      - name: Compile DEBUG APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
-          echo ">>> Avvio compilazione con Buildozer"
-          buildozer -v android debug
-          echo ">>> Ricerca AAB generato"
-          AAB_PATH=$(find . -name "*.aab" -print -quit)
-          if [ -z "$AAB_PATH" ]; then
-            echo "Errore: AAB non trovato!"
+          echo ">>> Avvio compilazione con Buildozer (Debug APK)"
+          # Usiamo 'debug' per generare direttamente l'APK firmato temporaneamente
+          buildozer -v android debug 
+          
+          echo ">>> Ricerca APK generato"
+          # Trova l'APK di debug in bin/ e usa il nome fisso per l'upload
+          APK_PATH=$(find bin -name "*-debug.apk" -print -quit)
+          if [ -z "$APK_PATH" ]; then
+            echo "Errore: APK di debug non trovato!"
             exit 1
           fi
-          echo "AAB trovato: $AAB_PATH"
+          echo "APK trovato: $APK_PATH"
+          
+          # Rinomina l'APK per l'upload
+          cp "$APK_PATH" myapp-debug.apk
+          echo "APK rinominato in myapp-debug.apk"
 
-      - name: Install Bundletool and Convert AAB to APK
-        run: |
-          wget https://github.com/google/bundletool/releases/download/1.15.0/bundletool-all-1.15.0.jar -O bundletool.jar
-          AAB_PATH=$(find . -name "*.aab" -print -quit)
-          java -jar bundletool.jar build-apks --bundle=$AAB_PATH --output=myapp.apks --mode=universal
-          unzip -q myapp.apks -d extracted_apks
-          mv extracted_apks/universal.apk myapp-release.apk
-          echo "APK generato: myapp-release.apk"
+      # NOTE: Gli step per Bundletool (conversione AAB -> APK) sono stati rimossi.
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-app-apk-release
-          path: myapp-release.apk
+          name: my-app-apk-debug
+          path: myapp-debug.apk
