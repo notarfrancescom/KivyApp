@@ -18,6 +18,8 @@ source.include_exts = py,png,jpg,kv,atlas
 
 # **AGGIUNGI QUESTA RIGA PER INCLUDERE LA CARTELLA FONT E IMMAGINI**
 source.include_dirs = materiale
+# (list) Application assets to be included (relative to the directory)
+source.include_patterns = *.py,*.png,*.jpg,*.kv,*.atlas,*.ttf,materiale/*
 
 # Versione dell'app
 version = 0.1
@@ -26,7 +28,7 @@ version = 0.1
 requirements = python3,kivy==2.3.1,filetype,tinydb
 
 # Versione Python (allineata al workflow)
-python.version = 3.10
+python.version = 3.11
 
 # Orientamento supportato
 orientation = portrait
