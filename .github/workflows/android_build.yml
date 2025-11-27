@@ -60,17 +60,20 @@ jobs:
           echo "ANDROID_NDK_HOME=$FINAL_NDK_FOLDER" >> $GITHUB_ENV
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
-      - name: Compile DEBUG APK via Buildozer
+      - name: Compile DEBUG APK via Buildozer (Clean & Build) 
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set -e
-          echo ">>> Avvio compilazione con Buildozer (Debug APK)"
-          # Usiamo 'debug' per generare direttamente l'APK firmato temporaneamente
+          echo ">>> Eseguo la pulizia completa della build precedente"
+          # 1. Pulizia completa per garantire una build fresca
+          buildozer android clean
+          
+          echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
+          # 2. Ricompilazione (creerà nuovamente tutti i file di build, inclusi gli SDK/NDK se la cache non è usata)
           buildozer -v android debug 
           
           echo ">>> Ricerca APK generato"
-          # Trova l'APK di debug in bin/ e usa il nome fisso per l'upload
           APK_PATH=$(find bin -name "*-debug.apk" -print -quit)
           if [ -z "$APK_PATH" ]; then
             echo "Errore: APK di debug non trovato!"
@@ -81,8 +84,6 @@ jobs:
           # Rinomina l'APK per l'upload
           cp "$APK_PATH" myapp-debug.apk
           echo "APK rinominato in myapp-debug.apk"
-
-      # NOTE: Gli step per Bundletool (conversione AAB -> APK) sono stati rimossi.
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
