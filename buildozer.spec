@@ -1,4 +1,3 @@
-
 [app]
 
 # Titolo dell'app
@@ -13,13 +12,14 @@ package.domain = com.vino.kivyapp
 # Directory sorgente
 source.dir = .
 
-# File da includere
-source.include_exts = py,png,jpg,kv,atlas
+# File da includere (estensioni nel root directory)
+source.include_exts = py,png,jpg,kv,atlas,ttf
 
-# **AGGIUNGI QUESTA RIGA PER INCLUDERE LA CARTELLA FONT E IMMAGINI**
-source.include_dirs = materiale
-# (list) Application assets to be included (relative to the directory)
-source.include_patterns = *.py,*.png,*.jpg,*.kv,*.atlas,*.ttf,materiale/*
+# PATTERN PER INCLUDERE TUTTI I FILE NECESSARI
+# La cartella 'materiale' è inclusa implicitamente nel pattern wildcard
+# './*' include tutti i file nella root (es. main.py)
+# 'materiale/*' include tutto il contenuto della cartella 'materiale'
+source.include_patterns = ./*,materiale/*
 
 # Versione dell'app
 version = 0.1
@@ -48,10 +48,10 @@ android.minapi = 21
 # Versione NDK (compatibile con python-for-android)
 android.ndk = 25b
 
-# Percorso NDK
+# Percorso NDK (Lascia commentato se usi l'installazione automatica di buildozer)
 # android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25b
 
-# Percorso SDK (aggiunto)
+# Percorso SDK (Lascia commentato se usi l'installazione automatica di buildozer)
 # android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
 
 # API NDK
@@ -66,7 +66,5 @@ android.allow_backup = True
 
 [buildozer]
 
-# Log level
+# Livello di Log (2 = Info)
 log_level = 2
-
-# Avviso se root
