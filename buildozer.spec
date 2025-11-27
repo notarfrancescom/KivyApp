@@ -16,6 +16,9 @@ source.dir = .
 # File da includere
 source.include_exts = py,png,jpg,kv,atlas
 
+# **AGGIUNGI QUESTA RIGA PER INCLUDERE LA CARTELLA FONT E IMMAGINI**
+source.include_dirs = materiale
+
 # Versione dell'app
 version = 0.1
 
