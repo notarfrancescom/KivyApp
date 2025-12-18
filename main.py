@@ -6,6 +6,7 @@ from kivy.lang import Builder
 from kivy.uix.button import Button
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
+from kivy.clock import Clock
 from kivy.metrics import dp  # Per definire le dimensioni in modo indipendente dalla densità
 from kivy.uix.dropdown import DropDown
 from kivy.factory import Factory
@@ -26,65 +27,63 @@ from kivy.uix.spinner import Spinner
 
 
 # Imposta la dimensione fissa della finestra
-# Window.size = (320, 480)
+# Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
+Window.size = (360, 640)
+#Window.size = (1080, 1920)
+Window.resizable = False
+
+# Colore di default per i bottoni deselezionati
+COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
 
 class RoundedButton(ButtonBehavior, BoxLayout):
-    """ Un bottone personalizzato che disegna il proprio sfondo arrotondato.
-    Gestisce l'estrazione delle proprietà non riconosciute dalle classi base."""
+    """ Un bottone personalizzato che disegna il proprio sfondo arrotondato. """
+
+    # Definiamo le proprietà Kivy a livello di classe
+    text = StringProperty('')
+    background_color = ListProperty([0.5, 0.5, 0.5, 1])  # Colore di default (grigio)
 
     def __init__(self, **kwargs):
-        # 1. Estrai il testo e il font_name per usarli nella Label
-        self._text = kwargs.pop('text', '')
-        self._font_name = kwargs.pop('font_name', 'Roboto')
+        # 1. Estraiamo TUTTE le proprietà custom prima di chiamare super()
+        # pop() rimuove la chiave dal dizionario kwargs e ne restituisce il valore
+        self.text = kwargs.pop('text', '')
+        self.background_color = kwargs.pop('background_color', [0.5, 0.5, 0.5, 1])
 
-        # Estrai font_size!
-        self._font_size = kwargs.pop('font_size', '15sp')  # Aggiunto il font_size con un default
+        # Estrai font_name e font_size (non sono proprietà Kivy standard per BoxLayout)
+        f_name = kwargs.pop('font_name', 'Roboto')
+        f_size = kwargs.pop('font_size', '15sp')
 
-        # Estrai il background_color e trattalo come un normale attributo per il disegno
-        self._background_color = kwargs.pop('background_color', [1, 1, 1, 1])
-
-        # 2. Chiama il costruttore della classe base con i kwargs PULITI
-        # Ora kwargs contiene solo proprietà valide per BoxLayout/ButtonBehavior.
+        # 2. Ora kwargs contiene solo proprietà valide per BoxLayout/ButtonBehavior
         super().__init__(**kwargs)
 
-        # 3. Aggiungi una Label al BoxLayout per visualizzare il testo
+        # 2. DISEGNO DELLO SFONDO (Canvas)
+        # Questo sostituisce quello che avresti messo nel file .kv
+        with self.canvas.before:
+            Color(rgba=self.background_color)
+            self.rect = RoundedRectangle(
+                pos=self.pos,
+                size=self.size,
+                radius=[15, ]  # Angoli arrotondati
+            )
+
+        # 3. Binding per aggiornare lo sfondo se il bottone si muove o cambia dimensione
+        self.bind(pos=self._update_rect, size=self._update_rect)
+
+        # 4. Aggiunta della Label del testo
         self.label = Label(
-            text=self._text,
-            font_name=self._font_name,  # Usa il valore estratto
-            font_size=self._font_size,  # UTILIZZA IL FONT_SIZE ESTRATTO
-            color=[0.95, 0.95, 0.95, 1],  # Colore del testo (bianco/chiaro)
+            text=self.text,
+            font_name=f_name,
+            font_size=f_size,
+            color=[1, 1, 1, 1],  # Testo Bianco
             bold=True
         )
         self.add_widget(self.label)
-
-        # Creazione delle istruzioni grafiche nel canvas.before
-        with self.canvas.before:
-            # 1. Istruzione Colore
-            self.color_instruction = Color(*self._background_color)
-
-            # 2. Istruzione Rettangolo Arrotondato:
-            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[(18, 18) for _ in range(4)])
-
-        # Binding per aggiornare il disegno quando pos o size cambiano
-        self.bind(pos=self._update_rect, size=self._update_rect)
-        # Binding per aggiornare il colore quando lo stato cambia (per l'effetto "down")
-        self.bind(state=self._update_color)
+        self.bind(text=self.label.setter('text'))
 
     def _update_rect(self, instance, value):
-        """Aggiorna posizione e dimensione del rettangolo."""
+        """Aggiorna la posizione e la dimensione del rettangolo sullo schermo."""
         self.rect.pos = instance.pos
         self.rect.size = instance.size
-
-    def _update_color(self, instance, value):
-        """Aggiorna il colore (scurisce se premuto)."""
-        # Applica colore leggermente più scuro quando premuto (state='down')
-        if instance.state == 'down':
-            # Usa il colore base estratto
-            darker_color = [c * 0.8 for c in self._background_color[:3]] + [self._background_color[3]]
-            self.color_instruction.rgba = darker_color
-        else:
-            self.color_instruction.rgba = self._background_color
 
 
 class BaseScreen(Screen):
@@ -101,83 +100,91 @@ class BaseScreen(Screen):
     SELECTION_KEYS = []
 
     def on_enter(self, *args):
-        """Metodo chiamato quando si naviga nella schermata.
-        Pre-carica i colori dei bottoni se siamo in modalità modifica."""
+        """Metodo chiamato quando si naviga nella schermata."""
         super().on_enter(*args)
         app = App.get_running_app()
 
-        # 1. RESET TOTALE: Spegni tutti i bottoni in questa schermata
-        self._reset_button_colors()  # Assumi che questo usi self.COLOR_DESELECTED
+        # 1. Reset dei colori dei bottoni di selezione
+        self._reset_button_colors()
 
-        # 1. Controlla se siamo in modalità modifica E se ci sono dati di selezione
-        if app.card_to_update_id is not None and app.selections:
+        # 2. Reset dello stato del Menu con un piccolissimo ritardo (0.1 secondi)
+        # Questo risolve il problema del bottone che resta "incastrato" in arancione
+        Clock.schedule_once(self._force_menu_reset, 0.1)
 
-            # 2. Resetta e poi imposta i colori dei bottoni
+        # 3. Se siamo in modalità modifica, evidenzia i valori
+        if app.card_to_update_id is not None:
             self._apply_selections(app, self.SELECTION_KEYS)
-            #self._apply_selections(app)
 
-    def _apply_selections(self, app, relevant_keys):
+    def _force_menu_reset(self, dt):
+        """Forza il tasto menu allo stato normale e rimuove eventuali tinte."""
+        if 'menu_button' in self.ids:
+            self.ids.menu_button.state = 'normal'
+            # Molto importante: impostiamo il colore a Bianco pieno (1,1,1,1)
+            # così l'immagine del menu non viene scurita dal grigio del reset
+            self.ids.menu_button.background_color = (1, 1, 1, 1)
+
+    def _apply_selections(self, app, selection_keys):
         """
-        Itera sui BOX contenitori e imposta il colore.
-        Gestisce anche il caso in cui un singolo DB key (es. 'profumo_rosso')
-        è distribuito su più KV ID (es. 'profumo_primari_rosso_box').
+        Applica i colori ai bottoni basandosi sui dati caricati.
+        Gestisce stringhe singole, liste e stringhe separate da virgola.
         """
+        for key in selection_keys:
+            data_key = key.replace('_box', '')
+            selected_value = app.selections.get(data_key)
 
-        for kv_id in relevant_keys:
-
-            # --- NUOVA LOGICA DI MAPPATURA ---
-            # 1. Deriva la chiave DB. In caso di chiavi composte (es. 'profumo_primari_...'),
-            #    dovrebbe tornare al nome base (es. 'profumo_...')
-
-            # Rimuovi '_box'
-            db_key_derived = kv_id.replace('_box', '')
-
-            # Mappatura specifica per chiavi composte (Primari/Secondari/Terziari/etc.)
-            if 'primari' in db_key_derived or 'secondari' in db_key_derived or 'terzari' in db_key_derived:
-                # Esempio: 'profumo_primari_rosso' -> 'profumo_rosso'
-                db_key = db_key_derived.split('_')[0] + '_' + db_key_derived.split('_')[-1]
-            else:
-                # Caso normale (es. 'limpidezza_rosso')
-                db_key = db_key_derived
-            # --- FINE NUOVA LOGICA DI MAPPATURA ---
-
-            # 2. Ottieni il valore selezionato dal dizionario app.selections
-            # db_key sarà 'profumo_rosso' (corretto) o 'limpidezza_rosso' (corretto)
-            db_value = app.selections.get(db_key)
-
-            if db_value is None:
-                continue
-
-            # 3. Trova il BoxLayout contenitore
-            try:
-                box_container = self.ids[kv_id]  # Usa l'ID KV (es. 'profumo_primari_rosso_box')
-            except KeyError:
-                print(f"ATTENZIONE: BoxLayout con ID '{kv_id}' non trovato.")
-                continue
-
-            # 4. Itera sui bottoni e colora
-            # ... (il resto del codice rimane uguale) ...
-            for widget in box_container.children:
-                if isinstance(widget, ButtonBehavior) and hasattr(widget, 'text'):
-                    button_text = widget.text
-                    is_selected = False
-
-                    # Logica per la selezione (Singola o Multipla)
-                    if isinstance(db_value, str) and button_text == db_value:
-                        is_selected = True
-                    elif isinstance(db_value, list) and button_text in db_value:
-                        is_selected = True
-
-                    if is_selected:
-                        widget.background_color = self.COLOR_SELECTED
+            if selected_value:
+                # --- NUOVA LOGICA DI TRASFORMAZIONE IN LISTA ---
+                if isinstance(selected_value, str):
+                    if ',' in selected_value:
+                        # Se è una stringa con virgole (es: 'Ciliegia, Mora')
+                        # Creiamo una lista pulendo gli spazi extra
+                        target_list = [s.strip() for s in selected_value.split(',')]
                     else:
-                        widget.background_color = self.COLOR_DESELECTED
+                        # Se è una stringa singola (es: 'Pulito')
+                        target_list = [selected_value.strip()]
+                elif isinstance(selected_value, list):
+                    # Se è già una lista (es: ['Rubino', 'Granata'])
+                    target_list = [str(v).strip() for v in selected_value]
+                else:
+                    target_list = []
+
+                # Pulizia finale: uniformiamo tutto a "una sola riga senza spazi extra"
+                target_list = [" ".join(val.split()) for val in target_list]
+
+                # --- RICERCA NEI BOTTONI ---
+                if key in self.ids:
+                    container = self.ids[key]
+
+                    def color_recursive(parent):
+                        for child in parent.children:
+                            if hasattr(child, 'text'):
+                                # Puliamo il testo del bottone (rimuove \n e spazi extra)
+                                clean_button_text = " ".join(child.text.split())
+
+                                if clean_button_text in target_list:
+                                    child.background_color = self.COLOR_SELECTED
+
+                            if hasattr(child, 'children'):
+                                color_recursive(child)
+
+                    color_recursive(container)
 
     def _reset_button_colors(self):
-        """Resetta esplicitamente i colori di tutti i bottoni a COLOR_DESELECTED."""
+        """Resetta i colori dei bottoni, escludendo quelli di sistema."""
         for widget in self.walk():
-            if isinstance(widget, ButtonBehavior) and hasattr(widget, 'background_color'):
-                widget.background_color = self.COLOR_DESELECTED
+            if isinstance(widget, ButtonBehavior):
+                # Controlliamo se è il tasto menu confrontando l'oggetto con l'ID
+                is_menu = False
+                if 'menu_button' in self.ids and widget == self.ids.menu_button:
+                    is_menu = True
+
+                # Se NON è il menu, resettiamo colore e stato
+                if not is_menu:
+                    if hasattr(widget, 'state'):
+                        widget.state = 'normal'
+                    if hasattr(widget, 'background_color'):
+                        # Qui applichiamo il tuo bianco sporco trasparente
+                        widget.background_color = self.COLOR_DESELECTED
 
     def on_button_press(self, group_name, button, other_buttons):
         """
@@ -242,8 +249,8 @@ class RedWineViewScreen(BaseScreen):
     """Schermata per la fase 'Vista' del vino rosso."""
     # Le chiavi devono corrispondere esattamente agli ID dei BoxLayout nel KV!
     SELECTION_KEYS = ['limpidezza_rosso_box', 'intensita_vista_rosso_box', 'colore_rosso_box']
-    pass
 
+    pass
 
 class RedWineNoseScreen(BaseScreen):
     """Schermata per la fase 'Naso' del vino rosso."""
@@ -251,12 +258,21 @@ class RedWineNoseScreen(BaseScreen):
     SELECTION_KEYS = [
         'condizione_rosso_box',         # Corretto: era 'condizione_rosso' nel log
         'intensita_naso_rosso_box',     # Corretto: era 'intensita_naso_rosso' nel log
-        # NOTA: Se hai suddiviso i profumi in box separati, includili tutti
-        'profumo_primari_rosso_box',
-        'profumo_secondari_rosso_box',
-        'profumo_terzari_rosso_box'
+        'profumo_rosso_box'
     ]
-    pass
+
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori (metodo della BaseScreen)
+        self._reset_button_colors()
+
+        # Se siamo in modifica, applica le selezioni caricate
+        if app.card_to_update_id is not None:
+            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
+            print(f"DEBUG NASO: {app.selections}")
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class RedWineTasteScreen(BaseScreen):
@@ -267,15 +283,32 @@ class RedWineTasteScreen(BaseScreen):
                       'tannicita_rosso_box',
                       'livello_alcolico_rosso_box',
                       'corpo_rosso_box',
-                      'sapore_primari_rosso_box', 'sapore_secondari_rosso_box', 'sapore_terzari_rosso_box',
+                      'sapore_rosso_box',
                       'persistenza_rosso_box'
                       ]
-    pass
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori
+        self._reset_button_colors()
+
+        # Se siamo in modifica, evidenzia i valori salvati
+        if app.card_to_update_id is not None:
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class RedWineEpilogueScreen(BaseScreen):
     """Schermata di 'Conclusione' del vino rosso."""
     SELECTION_KEYS = ['qualita_rosso_box']
+    def on_enter(self, *args):
+        # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
+        super().on_enter(*args)
+
+        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
+        menu_btn = self.ids.get('menu_button')
+        if menu_btn:
+            menu_btn.state = 'normal'
     pass
 
 
@@ -293,7 +326,7 @@ class RedWineInfoScreen(Screen):
         app = App.get_running_app()
 
         # Riferimento al bottone "Salva Scheda" (Assumiamo l'ID 'nav_salva_rosso' nel KV)
-        # NOTA: Devi assicurarti che il bottone nel file wineapp.kv abbia questo ID.
+        # NOTA: Devi assicurarti che il bottone nel file wineapp12.kv abbia questo ID.
         try:
             btn_salva = self.ids.nav_salva_rosso
         except KeyError:
@@ -338,6 +371,7 @@ class WhiteWineViewScreen(BaseScreen):
     """Schermata per la fase 'Vista' del vino bianco."""
     # Le chiavi devono corrispondere esattamente agli ID dei BoxLayout nel KV!
     SELECTION_KEYS = ['limpidezza_bianco_box', 'intensita_vista_bianco_box', 'colore_bianco_box']
+
     pass
 
 class WhiteWineNoseScreen(BaseScreen):
@@ -347,11 +381,21 @@ class WhiteWineNoseScreen(BaseScreen):
         'condizione_bianco_box',
         'intensita_naso_bianco_box',
         # NOTA: Se hai suddiviso i profumi in box separati, includili tutti
-        'profumo_primari_bianco_box',
-        'profumo_secondari_bianco_box',
-        'profumo_terzari_bianco_box'
+        'profumo_bianco_box'
     ]
-    pass
+
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori (metodo della BaseScreen)
+        self._reset_button_colors()
+
+        # Se siamo in modifica, applica le selezioni caricate
+        if app.card_to_update_id is not None:
+            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
+            print(f"DEBUG NASO: {app.selections}")
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class WhiteWineTasteScreen(BaseScreen):
@@ -362,15 +406,32 @@ class WhiteWineTasteScreen(BaseScreen):
                       'tannicita_bianco_box',
                       'livello_alcolico_bianco_box',
                       'corpo_bianco_box',
-                      'sapore_primari_bianco_box', 'sapore_secondari_bianco_box', 'sapore_terzari_bianco_box',
+                      'sapore_bianco_box',
                       'persistenza_bianco_box'
                       ]
-    pass
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori
+        self._reset_button_colors()
+
+        # Se siamo in modifica, evidenzia i valori salvati
+        if app.card_to_update_id is not None:
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class WhiteWineEpilogueScreen(BaseScreen):
-    """Schermata di 'Conclusione' del vino bianco."""
+    """Schermata di 'Conclusione' del vino rosso."""
     SELECTION_KEYS = ['qualita_bianco_box']
+    def on_enter(self, *args):
+        # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
+        super().on_enter(*args)
+
+        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
+        menu_btn = self.ids.get('menu_button')
+        if menu_btn:
+            menu_btn.state = 'normal'
     pass
 
 
@@ -388,7 +449,7 @@ class WhiteWineInfoScreen(Screen):
         app = App.get_running_app()
 
         # Riferimento al bottone "Salva Scheda" (Assumiamo l'ID 'nav_salva_rosso' nel KV)
-        # NOTA: Devi assicurarti che il bottone nel file wineapp.kv abbia questo ID.
+        # NOTA: Devi assicurarti che il bottone nel file wineapp12.kv abbia questo ID.
         try:
             btn_salva = self.ids.nav_salva_bianco
         except KeyError:
@@ -433,6 +494,7 @@ class PinkWineViewScreen(BaseScreen):
     """Schermata per la fase 'Vista' del vino rosato."""
     # Le chiavi devono corrispondere esattamente agli ID dei BoxLayout nel KV!
     SELECTION_KEYS = ['limpidezza_rosato_box', 'intensita_vista_rosato_box', 'colore_rosato_box']
+
     pass
 
 
@@ -443,11 +505,21 @@ class PinkWineNoseScreen(BaseScreen):
         'condizione_rosato_box',
         'intensita_naso_rosato_box',
         # NOTA: Se hai suddiviso i profumi in box separati, includili tutti
-        'profumo_primari_rosato_box',
-        'profumo_secondari_rosato_box',
-        'profumo_terzari_rosato_box'
+        'profumo_rosato_box'
     ]
-    pass
+
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori (metodo della BaseScreen)
+        self._reset_button_colors()
+
+        # Se siamo in modifica, applica le selezioni caricate
+        if app.card_to_update_id is not None:
+            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
+            print(f"DEBUG NASO: {app.selections}")
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class PinkWineTasteScreen(BaseScreen):
@@ -458,15 +530,32 @@ class PinkWineTasteScreen(BaseScreen):
                       'tannicita_rosato_box',
                       'livello_alcolico_rosato_box',
                       'corpo_rosato_box',
-                      'sapore_primari_rosato_box', 'sapore_secondari_rosato_box', 'sapore_terzari_rosato_box',
+                      'sapore_rosato_box',
                       'persistenza_rosato_box'
                       ]
-    pass
+    def on_enter(self, *args):
+        super().on_enter(*args)
+        app = App.get_running_app()
+
+        # Reset dei colori
+        self._reset_button_colors()
+
+        # Se siamo in modifica, evidenzia i valori salvati
+        if app.card_to_update_id is not None:
+            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class PinkWineEpilogueScreen(BaseScreen):
     """Schermata di 'Conclusione' del vino rosato."""
     SELECTION_KEYS = ['qualita_rosato_box']
+    def on_enter(self, *args):
+        # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
+        super().on_enter(*args)
+
+        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
+        menu_btn = self.ids.get('menu_button')
+        if menu_btn:
+            menu_btn.state = 'normal'
     pass
 
 
@@ -484,7 +573,7 @@ class PinkWineInfoScreen(Screen):
         app = App.get_running_app()
 
         # Riferimento al bottone "Salva Scheda" (Assumiamo l'ID 'nav_salva_rosso' nel KV)
-        # NOTA: Devi assicurarti che il bottone nel file wineapp.kv abbia questo ID.
+        # NOTA: Devi assicurarti che il bottone nel file wineapp12.kv abbia questo ID.
         try:
             btn_salva = self.ids.nav_salva_rosato
         except KeyError:
@@ -717,10 +806,7 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
             popup_instance.dismiss()
 
         app = App.get_running_app()
-        # Il colore del vino è implicito dalla schermata di archivio (es. 'rosso')
-        # Se usi un campo colore nel DB:
-        wine_color = self.wine_data.get('colore_vino', 'rosso')
-        # Altrimenti, assumi che RedWineCardItem gestisca solo il rosso:
+        # Il colore del vino è implicito dalla schermata di archivio
         wine_color = 'rosso'
 
         # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
@@ -936,6 +1022,11 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
     Scheda per visualizzare i dati di un singolo vino.
     Definiamo la proprietà wine_data che riceverà il dizionario da TinyDB.
     """
+    # --- COSTANTI DI TEMA ---
+    COLORE_INTESTAZIONE_ROSATO = (0.7, 0.45, 0.6, 1.0)  # malva scuro
+    COLORE_TITOLO_DETTAGLIO = "#D999CCFF"  # malva chiaro e delicato
+    COLORE_VALORI_DETTAGLIO = "#B37399FF"  # malva scuro
+
     wine_data = DictProperty({})  # Usiamo DictProperty perché wine_data è un dizionario (il record di TinyDB)
     row_index = NumericProperty(0)  # Proprietà per l'indice della riga (0, 1, 2, 3...)
     expanded = BooleanProperty(False)  # Traccia se la scheda è espansa o meno
@@ -965,7 +1056,7 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
             valign='middle',  # centra verticalmente
             size_hint_y=None,
             height=dp(35),
-            color=(0.7, 0.45, 0.6, 1.0),  # malva scuro
+            color=self.COLORE_INTESTAZIONE_ROSATO,
             font_size='16sp',
             font_name='materiale/comicbd.ttf',
             text_size=(dp(270), None)  # dimensione massima del testo affinché l'allineamento funzioni
@@ -974,13 +1065,11 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
         # 3. Funzione per aggiungere una riga di dettaglio
         def add_detail_row_pink(title, keys):
             # Combina i valori usando il metodo helper
-            colore_titolo_rosato = "#D999CCFF"  # malva chiaro e delicato
-            colore_valori_rosato = "#B37399FF"  # malva scuro
             values = [self.format_data_for_label_pink(key) for key in keys]
             valori_stringa = " / ".join(values)
             detail_text = (
-                    f"[color={colore_titolo_rosato}]{title}[/color]" +  # Prima parte (Titolo)
-                    f"[color={colore_valori_rosato}][b]{valori_stringa}[/b][/color]"  # Seconda parte (Valori)
+                    f"[color={self.COLORE_TITOLO_DETTAGLIO}]{title}[/color]" +  # Prima parte (Titolo)
+                    f"[color={self.COLORE_VALORI_DETTAGLIO}][b]{valori_stringa}[/b][/color]"  # Seconda parte (Valori)
             )
 
             # Usiamo Label dinamico (Dimensione fissa in X e altezza automatica in Y)
@@ -1078,7 +1167,7 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
         popup = Popup(
             title=nome_vino,
             title_font='materiale/comicbd.ttf',
-            title_color=(0.7, 0.45, 0.6, 1.0),  # malva scuro
+            title_color=self.COLORE_INTESTAZIONE_ROSATO,  # malva scuro
             content=final_content,  # Usa il contenitore finale
             size_hint=(0.95, 0.9),
             separator_color=(0.63, 0.40, 0.54, 1.0),  # Malva Scuro/Melanzana Pallida
@@ -1258,7 +1347,10 @@ class WineApp(App):
     sfondo_principale = StringProperty("materiale/iniziale.png")
 
     # Questo dizionario memorizzerà le selezioni dell'utente
-    selections = {}
+    selections = DictProperty({})
+
+    text_inputs = DictProperty({})
+
     db_red = None  # Aggiungiamo un riferimento al database per i rossi
     db_white = None  # Aggiungiamo un riferimento al database per i bianchi
     db_pink = None  # Aggiungiamo un riferimento al database per i rosati
@@ -1266,6 +1358,10 @@ class WineApp(App):
     # NUOVA PROPRIETÀ per tracciare l'ID del record da aggiornare
     # Usiamo NumericProperty con allownone=True per gestire il valore None (nessuna modifica attiva)
     card_to_update_id = NumericProperty(None, allownone=True)
+
+    # Definisce il colore deselezionato per il reset dei bottoni,
+    # ereditato da BaseScreen
+    COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
     def build(self):
         # Inizializza il database. Verrà creato un file db.json nella cartella principale.
@@ -1304,38 +1400,17 @@ class WineApp(App):
         return sm
 
     def on_stop(self):
-        """Metodo chiamato quando l'applicazione sta per chiudersi (sul segnale di stop).
-        Questo è il punto in cui tutte le risorse esterne (come le connessioni DB)
-        devono essere rilasciate.
-        """
+        """Chiude le connessioni TinyDB all'uscita."""
         print("WineApp: Avvio della chiusura esplicita delle risorse DB.")
 
-        # Chiudi i database TinyDB (il passo CRITICO)
-        # 1. Rosso
-        if self.db_red:
-            try:
-                self.db_red.close()
-                print("TinyDB Rosso chiuso.")
-            except Exception as e:
-                print(f"ATTENZIONE: Errore durante la chiusura di db_red: {e}")
+        for db in [self.db_red, self.db_white, self.db_pink]:
+            if db:
+                try:
+                    db.close()
+                    print(f"TinyDB {db} chiuso.")
+                except Exception as e:
+                    print(f"ATTENZIONE: Errore durante la chiusura del DB: {e}")
 
-        # 2. Bianco
-        if self.db_white:
-            try:
-                self.db_white.close()
-                print("TinyDB Bianco chiuso.")
-            except Exception as e:
-                print(f"ATTENZIONE: Errore durante la chiusura di db_white: {e}")
-
-        # 3. Rosato
-        if self.db_pink:
-            try:
-                self.db_pink.close()
-                print("TinyDB Rosato chiuso.")
-            except Exception as e:
-                print(f"ATTENZIONE: Errore durante la chiusura di db_pink: {e}")
-
-        # Chiama sempre il metodo base
         return super().on_stop()
 
     # metodo on_key_down
@@ -1344,41 +1419,23 @@ class WineApp(App):
 
         # 27 è il codice chiave per il pulsante Indietro su Kivy/Android
         if key == 27:
-            current_screen = self.root.current  # Ottieni il nome della schermata attuale
+            current_screen = self.root.current
+            is_in_degustazione = current_screen.startswith(('vista_', 'naso_', 'palato_', 'conclusioni_', 'info_'))
 
-            # Definisci le schermate di inserimento/modifica (vista, naso, palato, info)
-            # Sostituisci 'rosso' con la variabile corretta se la gestisci dinamicamente
-
-            # Esempio per il ROSSO:
-            is_in_degustazione = current_screen.startswith('vista_') or \
-                                 current_screen.startswith('naso_') or \
-                                 current_screen.startswith('palato_') or \
-                                 current_screen.startswith('conclusioni_') or \
-                                 current_screen.startswith('info_')
-
-            # Se siamo in una schermata di DEGUSTAZIONE (Modifica o Inserimento)
             if is_in_degustazione:
-                # 🚨 Se si preme Indietro, naviga alla schermata di selezione vino ('selection')
-                # e NON eseguire la transizione automatica.
+                # Naviga alla selezione vino e azzera lo stato di modifica e i dati
                 self.root.current = 'selection'
-
-                # Questo è il momento perfetto per azzerare lo stato di modifica,
-                # forzando l'utente a salvare, annullare o ri-selezionare.
-                # (Azzeriamo solo il card_to_update_id per annullare l'edit)
                 self.card_to_update_id = None
+                self.text_inputs = {}
+                self.selections = {}
+                return True
 
-                return True  # True significa che l'evento è stato gestito e NON DEVE essere propagato
+            if current_screen in ('welcome', 'selection'):
+                # Qui si potrebbe mostrare un popup di conferma uscita
+                return True
 
-            # Altrimenti, lascia che Kivy gestisca la navigazione all'indietro standard.
-            # Oppure, se sei sulla welcome screen o selection screen, potresti voler uscire dall'App.
+        return False
 
-            # Se sei sulla schermata principale o di selezione, chiedi conferma per uscire:
-            if current_screen == 'welcome' or current_screen == 'selection':
-                # Opzionale: Mostra un popup di conferma uscita
-                # self.show_exit_confirm_popup()
-                return True  # Blocca l'uscita automatica di sistema
-
-        return False  # Lascia che l'evento si propaghi normalmente (uscita da schermate non critiche)
 
     # All'interno di WineApp (metodo che i bottoni sulla schermata 'selection' dovrebbero chiamare)
 
@@ -1489,10 +1546,8 @@ class WineApp(App):
             db = self.db_pink
             archive_screen_name = 'archivio_rosato'  # O 'archivio_rosato', a seconda del KV
 
-        selections = self.selections.copy()
-
-        # 1. Definizione e costruzione dei dati della scheda
-        wine_card_ordered = {}
+        # Combina le selezioni dei bottoni (selections) con i dati di testo (text_inputs)
+        wine_card_ordered = self.selections.copy()
 
         # 2. Campi della SCHEDA INFO (Priorità)
         wine_card_ordered['nome_' + wine_color] = info_screen.ids['nome_' + wine_color].text
@@ -1503,21 +1558,17 @@ class WineApp(App):
         # AGGIUNGI QUI IL CAMPO NOTE PERSONALI SE ESISTE:
         # wine_card_ordered['note_personali'] = info_screen.ids['note_' + wine_color].text
 
-        # 3. Campi delle ALTRE SCHEDE
-        wine_card_ordered['limpidezza_' + wine_color] = selections.get('limpidezza_' + wine_color, '')
-        wine_card_ordered['intensita_vista_' + wine_color] = selections.get('intensita_vista_' + wine_color, '')
-        wine_card_ordered['colore_' + wine_color] = selections.get('colore_' + wine_color, '')
-        wine_card_ordered['condizione_' + wine_color] = selections.get('condizione_' + wine_color, '')
-        wine_card_ordered['intensita_naso_' + wine_color] = selections.get('intensita_naso_' + wine_color, '')
-        wine_card_ordered['profumo_' + wine_color] = selections.get('profumo_' + wine_color, '')
-        wine_card_ordered['dolcezza_' + wine_color] = selections.get('dolcezza_' + wine_color, '')
-        wine_card_ordered['acidita_' + wine_color] = selections.get('acidita_' + wine_color, '')
-        wine_card_ordered['tannicita_' + wine_color] = selections.get('tannicita_' + wine_color, '')
-        wine_card_ordered['livello_alcolico_' + wine_color] = selections.get('livello_alcolico_' + wine_color, '')
-        wine_card_ordered['corpo_' + wine_color] = selections.get('corpo_' + wine_color, '')
-        wine_card_ordered['sapore_' + wine_color] = selections.get('sapore_' + wine_color, '')
-        wine_card_ordered['persistenza_' + wine_color] = selections.get('persistenza_' + wine_color, '')
-        wine_card_ordered['qualita_' + wine_color] = selections.get('qualita_' + wine_color, '')
+        # 3. I campi delle ALTRE SCHEDE (limpidezza, acidità, ecc.) sono GIA' in wine_card_ordered
+        # grazie a self.selections.copy() all'inizio.
+
+        # Verifichiamo l'esistenza di tutti i campi essenziali, altrimenti usiamo ''
+
+        # Esempio: assicurarsi che 'profumo' sia una stringa (TinyDB preferisce non avere liste vuote)
+        profumo_value = wine_card_ordered.get('profumo_' + wine_color, [])
+        if isinstance(profumo_value, list):
+            wine_card_ordered['profumo_' + wine_color] = ', '.join(profumo_value)
+        # Nota: Assicurati che le chiavi 'limpidezza_rosso', 'acidita_bianco', ecc. siano gestite correttamente
+        # quando si popolano le selezioni (tramite il metodo BaseScreen.on_button_press).
 
         # =========================================================================
         # 4. LOGICA AGGIORNAMENTO / INSERIMENTO
@@ -1551,29 +1602,20 @@ class WineApp(App):
         # 5. RESET CAMPI (Eseguito sempre dopo insert o update)
         # =========================================================================
 
-        # Azzeramento del dizionario di caricamento
-        # Questo è fondamentale per garantire che la prossima scheda non carichi dati vecchi.
-        self.text_inputs = {}
+        # Esegui il reset completo (che include il reset di self.text_inputs, self.selections,
+        # self.card_to_update_id e i campi di testo sulla info_screen)
+        self.reset_all_data_entry_fields(wine_color)
 
-        # Resetta i campi di testo sulla schermata info
-        info_screen.ids['nome_' + wine_color].text = ''
-        info_screen.ids['produttore_' + wine_color].text = ''
-        info_screen.ids['annata_' + wine_color].text = ''
-        info_screen.ids['alcol_' + wine_color].text = 'Gradazione alcolica'
-        # if 'note_personali' in info_screen.ids:
-        #     info_screen.ids['note_personali'].text = ''
-
-        # Resetta i bottoni e le selezioni
-        self.reset_all_selections(wine_color)
-
-    # Definisci il colore deselezionato in un punto accessibile, o direttamente qui:
-    #COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
     def reset_all_selections(self, colore_del_vino):
-        # Resetta il dizionario delle selezioni
+        # Definisci il colore deselezionato in un punto accessibile, o direttamente qui:
+        COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
+
+        # 1. Resetta il dizionario delle selezioni
         self.selections = {}
 
-        # Resetta i bottoni di ogni scheda in modo pulito
+        # 2. Resetta i bottoni di ogni scheda in modo pulito
+
         # VISTA
         view_screen = self.root.get_screen('vista_' + colore_del_vino)
         if view_screen:
@@ -1583,33 +1625,42 @@ class WineApp(App):
                     box = view_screen.ids[box_id]
                     for btn in box.children:
                         # Usa la costante di colore
-                        btn.background_color = (0.9, 0.9, 0.9, 0.7)
+                        if hasattr(btn, 'background_color'):
+                            btn.background_color = COLOR_DESELECTED_APP
+                        # Nota: l'iterazione sui children in Kivy è in ordine inverso.
 
         # NASO
         nose_screen = self.root.get_screen('naso_' + colore_del_vino)
         if nose_screen:
+            # Nota: Ho corretto 'profumo_terzari' in 'profumo_terziari' se necessario,
+            # ma uso l'ID che hai fornito.
             for box_id in ['condizione_' + colore_del_vino + '_box', 'intensita_naso_' + colore_del_vino + '_box',
-                           'profumo_primari_' + colore_del_vino + '_box', 'profumo_secondari_' + colore_del_vino + '_box',
-                           'profumo_terzari_' + colore_del_vino + '_box']:
+                           'profumo_primari_' + colore_del_vino + '_box',
+                           'profumo_secondari_' + colore_del_vino + '_box',
+                           'profumo_terziari_' + colore_del_vino + '_box']:  # Uso 'terziari' per coerenza
                 if box_id in nose_screen.ids:
                     box = nose_screen.ids[box_id]
                     for btn in box.children:
-                        # Usa la costante di colore
-                        btn.background_color = (0.9, 0.9, 0.9, 0.7)
+                        if hasattr(btn, 'background_color'):
+                            btn.background_color = COLOR_DESELECTED_APP
 
         # PALATO
         taste_screen = self.root.get_screen('palato_' + colore_del_vino)
         if taste_screen:
+            # Nota: Ho corretto 'sapore_terzari' in 'sapore_terziari' se necessario.
+            # Ho aggiunto 'sapore_grid_content' se non usi la distinzione primari/secondari/terziari per il sapore.
             for box_id in ['dolcezza_' + colore_del_vino + '_box', 'acidita_' + colore_del_vino + '_box',
                            'tannicita_' + colore_del_vino + '_box', 'livello_alcolico_' + colore_del_vino + '_box',
-                           'corpo_' + colore_del_vino + '_box', 'sapore_primari_' + colore_del_vino + '_box',
-                           'sapore_secondari_' + colore_del_vino + '_box', 'sapore_terzari_' + colore_del_vino + '_box',
+                           'corpo_' + colore_del_vino + '_box',
+                           'sapore_primari_' + colore_del_vino + '_box',
+                           'sapore_secondari_' + colore_del_vino + '_box',
+                           'sapore_terziari_' + colore_del_vino + '_box',  # O 'sapore_grid_content' se è un unico box
                            'persistenza_' + colore_del_vino + '_box']:
                 if box_id in taste_screen.ids:
                     box = taste_screen.ids[box_id]
                     for btn in box.children:
-                        # Usa la costante di colore
-                        btn.background_color = (0.9, 0.9, 0.9, 0.7)
+                        if hasattr(btn, 'background_color'):
+                            btn.background_color = COLOR_DESELECTED_APP
 
         # CONCLUSIONI
         epilogue_screen = self.root.get_screen('conclusioni_' + colore_del_vino)
@@ -1618,8 +1669,10 @@ class WineApp(App):
                 if box_id in epilogue_screen.ids:
                     box = epilogue_screen.ids[box_id]
                     for btn in box.children:
-                        # Usa la costante di colore
-                        btn.background_color = (0.9, 0.9, 0.9, 0.7)
+                        if hasattr(btn, 'background_color'):
+                            btn.background_color = COLOR_DESELECTED_APP
+
+        print(f"Flusso di reset selezioni per {colore_del_vino} completato.")
 
     def reset_all_data_entry_fields(self, wine_color):
         """Resetta tutti i campi di input di testo e gli spinner sulla schermata INFO
@@ -1630,6 +1683,7 @@ class WineApp(App):
 
         # 2. Resetta lo stato di modifica
         self.card_to_update_id = None  # Cruciale per assicurare che il prossimo salvataggio sia un INSERT
+        self.text_inputs = {}  # Azzera il dizionario di pre-caricamento
 
         # 3. Resetta i campi di testo (sulla schermata INFO)
         info_screen_name = f'info_{wine_color}'
@@ -1637,16 +1691,20 @@ class WineApp(App):
             info_screen = self.root.get_screen(info_screen_name)
 
             # Campi di testo: li azzeriamo
-            info_screen.ids[f'nome_{wine_color}'].text = ''
-            info_screen.ids[f'produttore_{wine_color}'].text = ''
-            info_screen.ids[f'annata_{wine_color}'].text = ''
+            if info_screen.ids.get(f'nome_{wine_color}'):
+                info_screen.ids[f'nome_{wine_color}'].text = ''
+            if info_screen.ids.get(f'produttore_{wine_color}'):
+                info_screen.ids[f'produttore_{wine_color}'].text = ''
+            if info_screen.ids.get(f'annata_{wine_color}'):
+                info_screen.ids[f'annata_{wine_color}'].text = ''
 
             # Spinner/Campo alcol: usa il placeholder di default
-            info_screen.ids[f'alcol_{wine_color}'].text = 'Gradazione alcolica'
+            if info_screen.ids.get(f'alcol_{wine_color}'):
+                info_screen.ids[f'alcol_{wine_color}'].text = 'Gradazione alcolica'
 
-            # Se usi un campo Note Personali (text_input):
-            # if f'note_personali_{wine_color}' in info_screen.ids:
-            #     info_screen.ids[f'note_personali_{wine_color}'].text = ''
+            # Se usi un campo Note Personali (es. note_rosso)
+            if info_screen.ids.get(f'note_{wine_color}'):
+                info_screen.ids[f'note_{wine_color}'].text = ''
 
         print(f"Flusso di inserimento scheda {wine_color} resettato completamente.")
 
@@ -1727,6 +1785,13 @@ class WineApp(App):
 
         # Esegue il cambio di schermata
         if self.root.has_screen(archive_screen_name):
+            # 1. Forza il ricaricamento dei dati dell'archivio PRIMA di navigare.
+            # Questo è cruciale per vedere subito modifiche/eliminazioni/nuovi record.
+            screen_instance = self.root.get_screen(archive_screen_name)
+            if hasattr(screen_instance, 'load_archive_data'):
+                screen_instance.load_archive_data()
+
+            # 2. Naviga
             self.root.current = archive_screen_name
         else:
             print(f"Errore: La schermata '{archive_screen_name}' non è definita nel ScreenManager.")
@@ -1736,8 +1801,8 @@ class WineApp(App):
         Carica i dati della scheda in app.selections e app.text_inputs."""
 
         # --- AZZERA LO STATO PRIMA DI CARICARE I NUOVI DATI ---
-        self.selections = {}
-        self.text_inputs = {}
+        self.selections.clear()
+        self.text_inputs.clear()
         # -----------------------------------------------------------------
 
         # 1. RECUPERA E IMPOSTA L'ID DEL DOCUMENTO
