@@ -1364,27 +1364,7 @@ class WineApp(App):
     COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
     def build(self):
-        # --- TEST DEL COLORE ---
-        # Impostiamo lo sfondo a ROSSO (R=1, G=0, B=0, A=1)
-        # Se l'app funziona, vedrai lo schermo rosso invece che nero.
-        Window.clearcolor = (1, 0, 0, 1)
 
-        # --- CONFIGURAZIONE NORMALE ---
-        self.sm = ScreenManager(transition=FadeTransition())
-
-        # Aggiungiamo solo la WelcomeScreen all'inizio
-        self.sm.add_widget(WelcomeScreen(name='welcome'))
-
-        # Avviamo il caricamento "pigro" (lazy) dopo mezzo secondo
-        from kivy.clock import Clock
-        Clock.schedule_once(self.lazy_load_everything, 0.5)
-
-        # Gestione tasto back (Android)
-        Window.bind(on_keyboard=self.on_key_down)
-
-        return self.sm
-
-        """
         # 1. Inizializziamo SOLO lo ScreenManager e la prima schermata
         self.sm = ScreenManager(transition=FadeTransition())
 
@@ -1399,7 +1379,7 @@ class WineApp(App):
         Window.bind(on_keyboard=self.on_key_down)
 
         return self.sm
-        """
+
 
     def lazy_load_everything(self, dt):
         """
@@ -2047,14 +2027,19 @@ class WineApp(App):
         # Rimuovi anche la variabile temporanea del popup di dettaglio, se presente
         if hasattr(self, 'detail_popup_to_close'):
             del self.detail_popup_to_close
-    """
+
     def on_start(self):
-        # Questo forza un ridisegno immediato della finestra
+        # Questo forza Kivy a ricalcolare la finestra dopo un istante
+        Clock.schedule_once(self.refresh_window, 0.1)
+
+    def refresh_window(self, dt):
+        # Trucco: cambiamo leggermente la dimensione della finestra e torniamo indietro
+        # Questo "scrollone" costringe il driver Android a mostrare l'immagine
+        w, h = Window.size
+        Window.size = (w, h + 1)
+        Window.size = (w, h)
+        # Forza il ridisegno del canvas
         Window.canvas.ask_update()
-        # Opzionale: imposta un colore di sfondo predefinito (es. Bianco)
-        # così se lo schermo è bianco sai che Kivy sta disegnando correttamente.
-        Window.clearcolor = (1, 1, 1, 1)
-    """
 
 if __name__ == '__main__':
     WineApp().run()
