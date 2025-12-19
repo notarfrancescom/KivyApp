@@ -12,20 +12,27 @@ package.domain = com.vino.kivyapp
 # Directory sorgente
 source.dir = .
 
+# Include tutto ciò che è py, kv e tutta la cartella materiale
+source.include_exts = py, png, jpg, kv, atlas, ttf
+source.include_dirs = materiale
+
+#--------------------------------------------------------------
 # File da includere (estensioni nel root directory)
-source.include_exts = py,png,jpg,kv,atlas,ttf
+#source.include_exts = py,png,jpg,kv,atlas,ttf
 
 # PATTERN PER INCLUDERE TUTTI I FILE NECESSARI
 # La cartella 'materiale' è inclusa implicitamente nel pattern wildcard
 # './*' include tutti i file nella root (es. main.py)
 # 'materiale/*' include tutto il contenuto della cartella 'materiale'
 source.include_patterns = ./*,materiale/*
+#---------------------------------------------------------------
 
 # Versione dell'app
 version = 0.1
 
 # Requisiti (aggiungi qui eventuali librerie extra)
-requirements = python3,kivy==2.3.1,filetype,tinydb
+#requirements = python3,kivy==2.3.1,filetype,tinydb
+requirements = python3, kivy==2.3.0, sdl2, sdl2_image, sdl2_ttf, filetype, tinydb
 
 # Versione Python (allineata al workflow)
 python.version = 3.11
@@ -45,6 +52,10 @@ android.api = 34
 # Minima API supportata
 android.minapi = 21
 
+# ARCHITETTURE E RAMO P4A (Aggiungilo qui)
+android.archs = arm64-v8a, armeabi-v7a
+p4a.branch = master
+
 # Versione NDK (compatibile con python-for-android)
 android.ndk = 25b
 
@@ -63,6 +74,7 @@ android.archs = arm64-v8a, armeabi-v7a
 # Backup
 android.allow_backup = True
 
+android.meta_data = kivy_graphics_engine=gles2
 
 [buildozer]
 
