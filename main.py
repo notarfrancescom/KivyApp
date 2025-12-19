@@ -2026,5 +2026,13 @@ class WineApp(App):
         if hasattr(self, 'detail_popup_to_close'):
             del self.detail_popup_to_close
 
+    def on_start(self):
+        # Questo forza un ridisegno immediato della finestra
+        Window.canvas.ask_update()
+        # Opzionale: imposta un colore di sfondo predefinito (es. Bianco)
+        # così se lo schermo è bianco sai che Kivy sta disegnando correttamente.
+        Window.clearcolor = (1, 1, 1, 1)
+
+
 if __name__ == '__main__':
     WineApp().run()
