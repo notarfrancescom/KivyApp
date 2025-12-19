@@ -1364,40 +1364,74 @@ class WineApp(App):
     COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
     def build(self):
-        # Inizializza il database. Verrà creato un file db.json nella cartella principale.
-        self.db_red = TinyDB('red_wine_database.json')
-        self.db_white = TinyDB('white_wine_database.json')
-        self.db_pink = TinyDB('pink_wine_database.json')
+        # 1. Inizializziamo SOLO lo ScreenManager e la prima schermata
+        self.sm = ScreenManager(transition=FadeTransition())
 
-        # Inizializza lo ScreenManager
-        sm = ScreenManager(transition=FadeTransition())
+        # Aggiungiamo SOLO la schermata di benvenuto per ora
+        self.sm.add_widget(WelcomeScreen(name='welcome'))
 
-        # Aggiungi le schermate con i loro nomi per la navigazione
-        sm.add_widget(WelcomeScreen(name='welcome'))
-        sm.add_widget(WineSelectionScreen(name='selection'))
-        sm.add_widget(RedWineViewScreen(name='vista_rosso'))
-        sm.add_widget(RedWineNoseScreen(name='naso_rosso'))
-        sm.add_widget(RedWineTasteScreen(name='palato_rosso'))
-        sm.add_widget(RedWineEpilogueScreen(name='conclusioni_rosso'))
-        sm.add_widget(RedWineInfoScreen(name='info_rosso'))
-        sm.add_widget(WhiteWineViewScreen(name='vista_bianco'))
-        sm.add_widget(WhiteWineNoseScreen(name='naso_bianco'))
-        sm.add_widget(WhiteWineTasteScreen(name='palato_bianco'))
-        sm.add_widget(WhiteWineEpilogueScreen(name='conclusioni_bianco'))
-        sm.add_widget(WhiteWineInfoScreen(name='info_bianco'))
-        sm.add_widget(PinkWineViewScreen(name='vista_rosato'))
-        sm.add_widget(PinkWineNoseScreen(name='naso_rosato'))
-        sm.add_widget(PinkWineTasteScreen(name='palato_rosato'))
-        sm.add_widget(PinkWineEpilogueScreen(name='conclusioni_rosato'))
-        sm.add_widget(PinkWineInfoScreen(name='info_rosato'))
-        sm.add_widget(RedArchiveScreen(name='archivio_rosso'))
-        sm.add_widget(WhiteArchiveScreen(name='archivio_bianco'))
-        sm.add_widget(PinkArchiveScreen(name='archivio_rosato'))
+        # 2. Programmiamo il caricamento di tutto il resto "un attimo dopo" l'avvio
+        # 0.5 secondi sono sufficienti per far apparire lo schermo al sistema operativo
+        Clock.schedule_once(self.lazy_load_everything, 0.5)
 
-        # 1. Abilita la gestione dell'hardware back button (per Android/Linux)
+        # 3. Gestione tasto back
         Window.bind(on_keyboard=self.on_key_down)
 
-        return sm
+        return self.sm
+
+    def lazy_load_everything(self, dt):
+        """
+        dt è il 'delta time' passato automaticamente da Clock.
+        Anche se non lo usi, deve essere presente tra gli argomenti.
+        """
+        print("Inizio caricamento database e schermate...")
+
+        # --- 1. INIZIALIZZAZIONE DATABASE ---
+        try:
+            self.db_red = TinyDB('red_wine_database.json')
+            self.db_white = TinyDB('white_wine_database.json')
+            self.db_pink = TinyDB('pink_wine_database.json')
+            print("Database pronti.")
+        except Exception as e:
+            print(f"Errore caricamento DB: {e}")
+
+        # --- 2. CREAZIONE DELLE SCHERMATE ---
+        # Le creiamo in una lista per poi aggiungerle con un ciclo
+        schermate_da_aggiungere = [
+            WineSelectionScreen(name='selection'),
+
+            # ROSSI
+            RedWineViewScreen(name='vista_rosso'),
+            RedWineNoseScreen(name='naso_rosso'),
+            RedWineTasteScreen(name='palato_rosso'),
+            RedWineEpilogueScreen(name='conclusioni_rosso'),
+            RedWineInfoScreen(name='info_rosso'),
+            RedArchiveScreen(name='archivio_rosso'),
+
+            # BIANCHI
+            WhiteWineViewScreen(name='vista_bianco'),
+            WhiteWineNoseScreen(name='naso_bianco'),
+            WhiteWineTasteScreen(name='palato_bianco'),
+            WhiteWineEpilogueScreen(name='conclusioni_bianco'),
+            WhiteWineInfoScreen(name='info_bianco'),
+            WhiteArchiveScreen(name='archivio_bianco'),
+
+            # ROSATI
+            PinkWineViewScreen(name='vista_rosato'),
+            PinkWineNoseScreen(name='naso_rosato'),
+            PinkWineTasteScreen(name='palato_rosato'),
+            PinkWineEpilogueScreen(name='conclusioni_rosato'),
+            PinkWineInfoScreen(name='info_rosato'),
+            PinkArchiveScreen(name='archivio_rosato')
+        ]
+
+        # --- 3. AGGIUNTA ALLO SCREEN MANAGER ---
+        for screen in schermate_da_aggiungere:
+            # Verifichiamo che la schermata non sia già stata aggiunta (per sicurezza)
+            if not self.sm.has_screen(screen.name):
+                self.sm.add_widget(screen)
+
+        print("Tutte le schermate sono state caricate con successo!")
 
     def on_stop(self):
         """Chiude le connessioni TinyDB all'uscita."""
