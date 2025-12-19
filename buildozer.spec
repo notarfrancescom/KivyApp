@@ -69,7 +69,7 @@ android.ndk = 25b
 android.ndk_api = 21
 
 # Architetture supportate
-android.archs = arm64-v8a, armeabi-v7a
+#android.archs = arm64-v8a, armeabi-v7a
 
 # Backup
 android.allow_backup = True
