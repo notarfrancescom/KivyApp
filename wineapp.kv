@@ -18,15 +18,22 @@
     allow_stretch: True
     keep_ratio: True
 
-# Stile per il bottone del menu (sempre in alto a destra)
-<MenuButton@Button>:
-    background_normal: 'materiale/menu_tre_linee.png'
-    background_down: 'materiale/menu_tre_linee_cliccato.png'
-    background_color: 1, 1, 1, 1  # Forza il colore neutro di base
+# Nuovo stile: non eredita più da @Button ma da @ButtonBehavior+Image
+<MenuButton@ButtonBehavior+Image>:
+    # L'immagine viene definita tramite 'source' invece di 'background_normal'
+    source: 'materiale/menu_tre_linee.png'
+
+    # Dimensioni quadrate e fisse
     size_hint: None, None
-    size: dp(45), dp(45)  #dp(35), dp(25)
-    # Evita che l'immagine venga deformata all'interno del bottone
-    always_release: True
+    size: dp(45), dp(45)
+
+    # Fondamentale per la resa grafica pulita
+    allow_stretch: True
+    keep_ratio: True
+
+    # Opzionale: cambia immagine quando premuto
+    on_press: self.source = 'materiale/menu_tre_linee_cliccato.png'
+    on_release: self.source = 'materiale/menu_tre_linee.png'
 
 # Stile per le etichette con il colore del tema
 <RedWineLabel@Label>:
@@ -90,35 +97,33 @@
     RelativeLayout:
         size: root.size
 
-        # 1. Immagine di Sfondo/Centrale (Contiene Bottiglia/Bicchiere e Testo "Degustazione Vino")
+        # 1. Immagine di Sfondo (Pieno schermo - Opzione B riuscita)
         Image:
-            # Usa 'iniziale.png' per l'illustrazione completa
             source: 'materiale/iniziale.png'
-            # Fai in modo che l'immagine occupi circa l'80% dello schermo (sia x che y)
             size_hint: 1, 1
-            # Centra l'immagine
-            pos_hint: {'center_x': 0.5, 'center_y': 0.55}
-            # CRUCIALE: Mantiene le proporzioni e permette lo stretch
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
             allow_stretch: True
-            keep_ratio: False #True
+            keep_ratio: False
 
-        # 2. Menu Button e ancora
-        Label:
+        # 2. Menu Button e ancora (Semplificati e ordinati)
+        # L'ancora serve al Python per sapere dove far apparire il menu a tendina
+        Widget:
             id: menu_anchor
             size_hint: None, None
             size: dp(1), dp(1)
-            pos_hint: {"right": 0.95, "top": 0.95}
+            pos_hint: {"right": 0.95, "top": 0.92} # Posizionato appena sotto il tasto
+
         MenuButton:
-            pos_hint: {"right": 0.96, "top": 0.98}
+            # Grazie al nuovo stile @ButtonBehavior+Image, qui basta il pos_hint
+            pos_hint: {"right": 0.98, "top": 0.98}
             on_release: app.show_main_menu(root.ids.menu_anchor)
 
-        # 3. Pulsante "Inizia" - ORA CON PROPORZIONI CORRETTE (Richiede StartImageButton in Python)
-        StartImageButton: # <--- Usiamo il widget custom per mantenere le proporzioni
+        # 3. Pulsante "Inizia"
+        StartImageButton:
             source: "materiale/inizia.png"
-            # size_hint_x definisce la larghezza in percentuale (es. 50% dello schermo)
             size_hint_x: 0.5
-            size_hint_y: None # L'altezza è dinamica
-            height: self.width * 0.35 # Suggerimento: aggiungi un calcolo altezza per evitare schiacciamenti
+            size_hint_y: None
+            height: self.width * 0.35
             pos_hint: {"center_x": 0.5, "y": 0.1}
             on_release: root.manager.current = 'selection'
 
