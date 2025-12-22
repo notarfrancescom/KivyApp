@@ -2027,13 +2027,12 @@ class WineApp(App):
         # Rimuovi anche la variabile temporanea del popup di dettaglio, se presente
         if hasattr(self, 'detail_popup_to_close'):
             del self.detail_popup_to_close
-"""
+
     def on_start(self):
         # Questo forza Kivy a ricalcolare la finestra dopo un istante
         Clock.schedule_once(self.refresh_window, 0.1)
 
-    
-	def refresh_window(self, dt):
+    def refresh_window(self, dt):
         # Trucco: cambiamo leggermente la dimensione della finestra e torniamo indietro
         # Questo "scrollone" costringe il driver Android a mostrare l'immagine
         w, h = Window.size
@@ -2041,9 +2040,6 @@ class WineApp(App):
         Window.size = (w, h)
         # Forza il ridisegno del canvas
         Window.canvas.ask_update()
-		"""
 
 if __name__ == '__main__':
     WineApp().run()
-
-
