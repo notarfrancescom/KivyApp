@@ -28,9 +28,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-Window.size = (360, 640)
+#Window.size = (360, 640)
 #Window.size = (1080, 1920)
-Window.resizable = False
+#Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -2042,3 +2042,4 @@ class WineApp(App):
 
 if __name__ == '__main__':
     WineApp().run()
+
