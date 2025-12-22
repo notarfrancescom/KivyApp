@@ -28,9 +28,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-#Window.size = (360, 640)
+Window.size = (360, 640)
 #Window.size = (1080, 1920)
-#Window.resizable = False
+Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -1762,13 +1762,13 @@ class WineApp(App):
 
         dropdown = DropDown()
 
-        LARGHEZZA_MENU = menu_anchor_instance.width
-        ALTEZZA_BOTTONE = 44  # Altezza in pixel (dp)
+        # --- MODIFICA FONDAMENTALE ---
+        # Non usare la larghezza dell'istanza ancora (che è dp(1)),
+        # ma imposta una larghezza fissa (es. 180dp o 200dp)
+        LARGHEZZA_MENU = dp(200)
+        ALTEZZA_BOTTONE = 44
 
-        # 2. Lista delle opzioni del menu:
-        # (img_normale, img_cliccata, azione)
         menu_items = [
-            # SOSTITUISCI QUESTI PERCORSI CON I TUOI FILE IMMAGINE REALI
             ('materiale/menu_archivio_rossi.png', 'materiale/menu_archivio_rossi_cliccato.png',
              lambda: self.navigate_to_archive('rosso')),
             ('materiale/menu_archivio_bianchi.png', 'materiale/menu_archivio_bianchi_cliccato.png',
@@ -1780,26 +1780,25 @@ class WineApp(App):
             ('materiale/menu_esci.png', 'materiale/menu_esci_cliccato.png', self.stop)
         ]
 
-        # 3. Creazione e configurazione dei bottoni
         for img_normal, img_down, action in menu_items:
             btn = Button(
-                text='',  # Rimuovi il testo
-                size_hint_y=None,
+                text='',
+                size_hint=(None, None),  # Forza la dimensione fissa
                 height=dp(ALTEZZA_BOTTONE),
                 width=LARGHEZZA_MENU,
-
-                # IMPOSTA GLI SFONDI COME IMMAGINI
                 background_normal=img_normal,
-                background_down=img_down
+                background_down=img_down,
+                # Importante: rimuoviamo i bordi grigi di default per bottoni immagine
+                border=(0, 0, 0, 0)
             )
 
-            # Collega l'azione e l'istruzione per chiudere il menu
             btn.bind(on_release=lambda instance, act=action: self._execute_menu_action(dropdown, act))
-
-            # AGGIUNGI IL BOTTONE DIRETTAMENTE AL DROPDOWN
             dropdown.add_widget(btn)
 
-        # 4. Apri il menu a comparsa (sotto il bottone che lo ha attivato)
+        # Impostiamo la larghezza del dropdown stesso prima di aprirlo
+        dropdown.width = LARGHEZZA_MENU
+
+        # Apri il menu
         dropdown.open(menu_anchor_instance)
 
     def _execute_menu_action(self, dropdown, action):

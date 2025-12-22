@@ -111,9 +111,10 @@
             id: menu_anchor
             size_hint: None, None
             size: dp(1), dp(1)
-            pos_hint: {"right": 0.95, "top": 0.92} # Posizionato appena sotto il tasto
+            pos_hint: {"right": 0.95, "top": 0.90} # Posizionato appena sotto il tasto
 
         MenuButton:
+            id: menu_button
             # Grazie al nuovo stile @ButtonBehavior+Image, qui basta il pos_hint
             pos_hint: {"right": 0.98, "top": 0.98}
             on_release: app.show_main_menu(root.ids.menu_anchor)
