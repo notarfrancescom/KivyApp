@@ -24,7 +24,9 @@
     background_down: 'materiale/menu_tre_linee_cliccato.png'
     background_color: 1, 1, 1, 1  # Forza il colore neutro di base
     size_hint: None, None
-    size: dp(35), dp(25)
+    size: dp(45), dp(45)  #dp(35), dp(25)
+    # Evita che l'immagine venga deformata all'interno del bottone
+    always_release: True
 
 # Stile per le etichette con il colore del tema
 <RedWineLabel@Label>:
@@ -94,28 +96,21 @@
             source: 'materiale/iniziale.png'
             # Fai in modo che l'immagine occupi circa l'80% dello schermo (sia x che y)
             size_hint: 1, 1
-            #size_hint_x: 0.85
-            #size_hint_y: None
-            #height: self.width * 1.5
             # Centra l'immagine
             pos_hint: {'center_x': 0.5, 'center_y': 0.55}
             # CRUCIALE: Mantiene le proporzioni e permette lo stretch
             allow_stretch: True
             keep_ratio: False #True
 
-        # 2. Menu Button
-        FloatLayout:
-            size_hint: 1, 1
-            Label:
-                id: menu_anchor
-                size_hint: None, None
-                width: dp(150)
-                height: dp(1)
-                pos_hint: {"right": 0.95, "top": 0.95}
-                color: 0, 0, 0, 0
-            MenuButton:
-                pos_hint: {"right": 0.925, "top": 0.965}
-                on_release: app.show_main_menu(root.ids.menu_anchor)
+        # 2. Menu Button e ancora
+        Label:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.95}
+        MenuButton:
+            pos_hint: {"right": 0.96, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
 
         # 3. Pulsante "Inizia" - ORA CON PROPORZIONI CORRETTE (Richiede StartImageButton in Python)
         StartImageButton: # <--- Usiamo il widget custom per mantenere le proporzioni
@@ -123,6 +118,7 @@
             # size_hint_x definisce la larghezza in percentuale (es. 50% dello schermo)
             size_hint_x: 0.5
             size_hint_y: None # L'altezza è dinamica
+            height: self.width * 0.35 # Suggerimento: aggiungi un calcolo altezza per evitare schiacciamenti
             pos_hint: {"center_x": 0.5, "y": 0.1}
             on_release: root.manager.current = 'selection'
 
