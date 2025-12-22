@@ -142,7 +142,23 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # Contenitore Principale (Centrato)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Spostati fuori dal BoxLayout per fissità)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a WelcomeScreen
+
+        MenuButton:
+            # COORDINATE IDENTICHE ALLA WELCOME SCREEN
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. CONTENITORE PRINCIPALE (Contenuto centrale)
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size_hint: 1, 1
@@ -150,51 +166,27 @@
             spacing: dp(10)
             padding: dp(10)
 
-            # -----------------------------------------------------------------
-            # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-            # -----------------------------------------------------------------
-            FloatLayout:
-                size_hint_y: None
-                height: dp(40) # Spazio verticale dedicato al Menu Button
+            # Spazio vuoto superiore per non sovrapporsi al MenuButton
+            Widget:
+                size_hint_y: 0.1
 
-                # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                Label:
-                    id: menu_anchor
-                    size_hint: None, None
-                    width: dp(150)
-                    height: dp(1)
-                    pos_hint: {"right": 0.95, "top": 0.95}
-                    color: 0, 0, 0, 0
-
-                # 1b. MENU BUTTON (Il bottone effettivo)
-                MenuButton:
-                    pos_hint: {"right": 0.95, "top": 0.7}
-                    on_release: app.show_main_menu(root.ids.menu_anchor)
-
-            # -----------------------------------------------------------------
-            # 2. TITOLO: Che vino stai degustando (Sotto lo spazio del menu)
-            # -----------------------------------------------------------------
+            # TITOLO: Che vino stai degustando
             Image:
                 source: "materiale/che_vino_stai_degustando.png"
                 size_hint_y: 0.15
                 allow_stretch: True
                 keep_ratio: True
 
-            # -----------------------------------------------------------------
-            # 3. CONTENITORE BOTTONI (Corpo centrale)
-            # -----------------------------------------------------------------
+            # CONTENITORE BOTTONI (Corpo centrale)
             RelativeLayout:
                 size_hint_y: 0.7
 
-                # Sfondo: immagine rosso_bianco_rosato (deve riempire il RelativeLayout)
                 Image:
                     source: "materiale/rosso_bianco_rosato.png"
                     size_hint: 1, 1
-                    pos: self.parent.pos
                     allow_stretch: True
                     keep_ratio: False
 
-                # Bottone ROSSO
                 Button:
                     background_normal: "materiale/rosso.png"
                     background_down: "materiale/rosso_cliccato.png"
@@ -202,7 +194,6 @@
                     pos_hint: {"x": 0, "center_y": 0.52}
                     on_release: root.manager.current = 'vista_rosso'
 
-                # Bottone BIANCO
                 Button:
                     background_normal: "materiale/bianco.png"
                     background_down: "materiale/bianco_cliccato.png"
@@ -210,7 +201,6 @@
                     pos_hint: {"center_x": 0.5, "center_y": 0.5}
                     on_release: root.manager.current = 'vista_bianco'
 
-                # Bottone ROSATO
                 Button:
                     background_normal: "materiale/rosato.png"
                     background_down: "materiale/rosato_cliccato.png"
@@ -218,9 +208,6 @@
                     pos_hint: {"right": 0.99, "center_y": 0.5}
                     on_release: root.manager.current = 'vista_rosato'
 
-            # -----------------------------------------------------------------
-            # 4. Spazio vuoto (Sotto i bottoni)
-            # -----------------------------------------------------------------
             Widget:
                 size_hint_y: 0.05
 
