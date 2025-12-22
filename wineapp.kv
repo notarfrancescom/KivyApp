@@ -98,10 +98,10 @@
             #size_hint_y: None
             #height: self.width * 1.5
             # Centra l'immagine
-            #pos_hint: {'center_x': 0.5, 'center_y': 0.55}
+            pos_hint: {'center_x': 0.5, 'center_y': 0.55}
             # CRUCIALE: Mantiene le proporzioni e permette lo stretch
             allow_stretch: True
-            keep_ratio: True
+            keep_ratio: False #True
 
         # 2. Menu Button
         FloatLayout:
