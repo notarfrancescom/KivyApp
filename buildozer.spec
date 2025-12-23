@@ -1,10 +1,10 @@
 [app]
 
 # Titolo dell'app
-title = My Application
+title = Degustazione Vino
 
 # Nome del pacchetto
-package.name = myapp
+package.name = WineTastingApp
 
 # Dominio del pacchetto
 package.domain = com.vino.kivyapp
