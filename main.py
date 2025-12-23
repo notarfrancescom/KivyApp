@@ -28,9 +28,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-#Window.size = (360, 640)
+Window.size = (360, 640)
 #Window.size = (1080, 1920)
-#Window.resizable = False
+Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -1758,15 +1758,17 @@ class WineApp(App):
         print("Modalità modifica annullata. Navigazione a Selezione Vino.")
 
     def show_main_menu(self, menu_anchor_instance):
-        """Crea e mostra un DropDown menu utilizzando l'Ancora Larga con bottoni immagine."""
+        """Mostra il menu assicurando dimensioni fisse e visibilità."""
 
-        dropdown = DropDown()
+        # Se esiste già un menu aperto, chiudilo per evitare sovrapposizioni
+        if hasattr(self, 'current_dropdown') and self.current_dropdown:
+            self.current_dropdown.dismiss()
 
-        # --- MODIFICA FONDAMENTALE ---
-        # Non usare la larghezza dell'istanza ancora (che è dp(1)),
-        # ma imposta una larghezza fissa (es. 180dp o 200dp)
-        LARGHEZZA_MENU = dp(200)
-        ALTEZZA_BOTTONE = 44
+        # Creazione DropDown con auto_width=False
+        self.current_dropdown = DropDown(auto_width=False)
+
+        LARGHEZZA_MENU = dp(220)  # Leggermente più largo per sicurezza
+        ALTEZZA_BOTTONE = dp(44)
 
         menu_items = [
             ('materiale/menu_archivio_rossi.png', 'materiale/menu_archivio_rossi_cliccato.png',
@@ -1782,24 +1784,25 @@ class WineApp(App):
 
         for img_normal, img_down, action in menu_items:
             btn = Button(
-                text='',
-                size_hint=(None, None),  # Forza la dimensione fissa
-                height=dp(ALTEZZA_BOTTONE),
+                size_hint=(None, None),
+                height=ALTEZZA_BOTTONE,
                 width=LARGHEZZA_MENU,
                 background_normal=img_normal,
                 background_down=img_down,
-                # Importante: rimuoviamo i bordi grigi di default per bottoni immagine
                 border=(0, 0, 0, 0)
             )
 
-            btn.bind(on_release=lambda instance, act=action: self._execute_menu_action(dropdown, act))
-            dropdown.add_widget(btn)
+            btn.bind(on_release=lambda instance, act=action: self._execute_menu_action(self.current_dropdown, act))
+            self.current_dropdown.add_widget(btn)
 
-        # Impostiamo la larghezza del dropdown stesso prima di aprirlo
-        dropdown.width = LARGHEZZA_MENU
+        # --- FORZATURA DIMENSIONI FINALI ---
+        self.current_dropdown.width = LARGHEZZA_MENU
+        # L'altezza del DropDown deve essere la somma dei bottoni
+        self.current_dropdown.container.height = ALTEZZA_BOTTONE * len(menu_items)
 
-        # Apri il menu
-        dropdown.open(menu_anchor_instance)
+        # Apertura sull'ancora
+        self.current_dropdown.open(menu_anchor_instance)
+
 
     def _execute_menu_action(self, dropdown, action):
         """Esegue l'azione del bottone e chiude il dropdown."""
@@ -2042,4 +2045,3 @@ class WineApp(App):
 
 if __name__ == '__main__':
     WineApp().run()
-

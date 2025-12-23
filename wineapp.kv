@@ -110,7 +110,7 @@
         Widget:
             id: menu_anchor
             size_hint: None, None
-            size: dp(1), dp(1)
+            size: dp(40), dp(1)
             pos_hint: {"right": 0.95, "top": 0.90} # Posizionato appena sotto il tasto
 
         MenuButton:
@@ -252,14 +252,14 @@
                 orientation: 'vertical'
                 size_hint_y: None
                 # Altezza fissa aumentata per includere lo spazio del menu
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 # Padding laterale standard
                 padding: dp(12), dp(5), dp(12), dp(0)
 
                 Widget:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(50)
 
                 # Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
@@ -508,6 +508,21 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCORA (Spostati qui per essere fissi ovunque)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a Welcome e Selection
+
+        MenuButton:
+            id: menu_button
+            # COORDINATE IDENTICHE PER EVITARE IL "SALTO" VISIVO
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
         # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
         BoxLayout:
             orientation: 'vertical'
@@ -518,32 +533,16 @@
                 orientation: 'vertical'
                 size_hint_y: None
                 # Altezza aumentata per riservare spazio al menu in alto
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                Widget:
                     size_hint_y: None
-                    height: dp(40) # Spazio verticale dedicato al Menu Button
+                    height: dp(50)
 
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        # Posizionalo in alto a destra
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
 
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
-
-                # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
+                # Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1 # Occupa lo spazio rimanente nell'Header
@@ -788,40 +787,39 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCORA (Spostati qui per essere fissi ovunque)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a Welcome e Selection
+
+        MenuButton:
+            id: menu_button
+            # COORDINATE IDENTICHE PER EVITARE IL "SALTO" VISIVO
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
         # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # HEADER / TITOLO (Fisso in alto) - Aggiornato per includere il Menu Button
+            # HEADER / TITOLO (Fisso in alto)
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                # Altezza aumentata per riservare spazio al menu in alto
-                height: dp(130)
+                # Altezza fissa aumentata per includere lo spazio del menu
+                height: dp(140)
                 spacing: dp(5)
+                # Padding laterale standard
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                Widget:
                     size_hint_y: None
-                    height: dp(40) # Spazio verticale dedicato al Menu Button
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        # Posizionalo in alto a destra
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
@@ -1043,7 +1041,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
@@ -1051,7 +1049,7 @@
                 # Aggiungiamo lo spacer per proteggere l'area del MenuButton
                 Widget:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(50)
 
                 # Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -1342,43 +1340,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi e indipendenti dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre schermate
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto) - STESSO ALTEZZA E STRUTTURA DI VISTA_ROSSO/NASO_ROSSO
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                # Altezza fissa aumentata per includere lo spazio del menu
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
-                # Padding laterale standard
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                # --- RIMOSSO IL VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per proteggere l'area del MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40) # Spazio verticale dedicato al Menu Button
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        id: menu_button # <--- ID AGGIUNTO per il reset dello stato
-                        # Posizione leggermente aggiustata per coerenza visiva
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
@@ -1663,43 +1659,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi e indipendenti dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre schermate
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                # Altezza fissa per coerenza
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
-                # Padding laterale standard
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                # --- RIMOSSO IL VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per proteggere l'area del MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40) # Spazio verticale dedicato al Menu Button
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        id: menu_button # ID AGGIUNTO per il reset dello stato
-                        # Posizione leggermente aggiustata per coerenza visiva
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
@@ -2012,7 +2006,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
@@ -2020,7 +2014,7 @@
                 # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
                 Widget:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(50)
 
                 # Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -2545,40 +2539,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai Box)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
             # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -3112,40 +3107,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai Box)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
             # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -3671,7 +3667,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
@@ -3679,7 +3675,7 @@
                 # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
                 Widget:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(50)
 
                 # Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -3828,40 +3824,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -4013,40 +4010,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Aggiungiamo lo spacer per non sovrapporre i contenuti al MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -4224,7 +4222,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130)
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
@@ -4232,7 +4230,7 @@
                 # Spacer per l'area del MenuButton
                 Widget:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(50)
 
                 # Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -4386,40 +4384,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Spacer per l'area del MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -4575,40 +4574,41 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content + Footer)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto)
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza
+                height: dp(140)
                 spacing: dp(5)
                 padding: dp(12), dp(5), dp(12), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor
-                FloatLayout:
+                # --- RIMOSSO VECCHIO FLOATLAYOUT DEL MENU ---
+                # Spacer per l'area del MenuButton
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-
-                    # 1a. ANCORA INVISIBILE
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON
-                    MenuButton:
-                        id: menu_button
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header
                 BoxLayout:
@@ -4764,52 +4764,49 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
+            # --- PADDING LATERALE ---
+            padding: dp(12), 0, dp(12), dp(12)
             spacing: dp(10)
-            padding: dp(12), dp(0), dp(12), dp(12) # 12dp di padding laterale/inferiore
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto) - ALTEZZA FISSA: 130dp
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza con le altre schermate
+                height: dp(140)
                 spacing: dp(5)
-                padding: dp(0), dp(5), dp(0), dp(0) # Padding verticale
+                padding: dp(0), dp(5), dp(0), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-                    # Aggiunto padding laterale solo qui per il bottone Menu
-                    padding: dp(12), dp(0), dp(12), dp(0)
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        # Posizionato per apparire in alto a destra
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        # La posizione è adattata al nuovo padding del FloatLayout
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
-                    spacing: dp(5)
-                    padding: dp(12), dp(0), dp(12), dp(0) # Padding laterale per l'immagine
+                    #spacing: dp(5)
+                    #padding: dp(12), dp(0), dp(12), dp(0) # Padding laterale per l'immagine
 
                     Image:
                         source: 'materiale/archivio_rossi_base.png'
@@ -4823,7 +4820,7 @@
                 size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
                 do_scroll_x: False
                 # Padding laterale spostato qui per centrare il contenuto scorrevole
-                padding: dp(0), dp(0), dp(0), dp(0) # Rimuovi padding ScrollView, usa quello del GridLayout interno
+                #padding: dp(0), dp(0), dp(0), dp(0) # Rimuovi padding ScrollView, usa quello del GridLayout interno
 
                 # GRIDLAYOUT (Contenitore dinamico delle schede)
                 GridLayout:
@@ -4833,7 +4830,7 @@
                     size_hint_y: None
                     # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(0) # Padding superiore per staccare dall'header
+                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
 
 
 # ==============================================================================
@@ -4849,53 +4846,47 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
-            spacing: 10
-            padding: 12, 0, 12, 12
+            # --- PADDING LATERALE ---
+            padding: dp(12), 0, dp(12), dp(12)
+            spacing: dp(10)
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto) - ALTEZZA FISSA: 130dp
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza con le altre schermate
+                height: dp(140)
                 spacing: dp(5)
-                # Padding esterno rimosso (spostato all'interno dei sottocontenitori)
-                padding: dp(0), dp(5), dp(0), dp(0) # Padding verticale
+                padding: dp(0), dp(5), dp(0), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-                    # Aggiunto padding laterale solo qui per il bottone Menu
-                    padding: dp(12), dp(0), dp(12), dp(0)
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        # Posizionato per apparire in alto a destra
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettivo)
-                    MenuButton:
-                        # La posizione è adattata al nuovo padding del FloatLayout
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
-                    spacing: dp(5)
-                    padding: dp(12), dp(0), dp(12), dp(0) # Padding laterale per l'immagine
 
                     Image:
                         source: 'materiale/archivio_bianchi_base.png'
@@ -4908,8 +4899,6 @@
             ScrollView:
                 size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
                 do_scroll_x: False
-                # Padding laterale spostato qui per centrare il contenuto scorrevole
-                padding: dp(0), dp(0), dp(0), dp(0) # Rimuovi padding ScrollView, usa quello del GridLayout interno
 
                 # GRIDLAYOUT (Contenitore dinamico delle schede)
                 GridLayout:
@@ -4919,7 +4908,7 @@
                     size_hint_y: None
                     # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(0) # Padding superiore per staccare dall'header
+                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
 
 
 # ==============================================================================
@@ -4935,54 +4924,47 @@
                 size: self.size
                 source: 'materiale/iniziale_background.png'
 
-        # BOX CONTENITORE VERTICALE PRINCIPALE (Header + Scrollable Content)
+        # -----------------------------------------------------------------
+        # 1. MENU BUTTON E ANCHOR (Fissi in alto, fuori dai BoxLayout)
+        # -----------------------------------------------------------------
+        Widget:
+            id: menu_anchor
+            size_hint: None, None
+            size: dp(1), dp(1)
+            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+
+        MenuButton:
+            id: menu_button
+            # Coordinate bloccate per eliminare il "salto" visivo
+            pos_hint: {"right": 0.98, "top": 0.98}
+            on_release: app.show_main_menu(root.ids.menu_anchor)
+
+        # -----------------------------------------------------------------
+        # 2. BOX CONTENITORE VERTICALE PRINCIPALE
+        # -----------------------------------------------------------------
         BoxLayout:
             orientation: 'vertical'
             size: root.size
-            spacing: 10
-            # Rimosso il padding superiore (52) per non interferire con l'Header fisso
-            padding: 12, 0, 12, 12
+            # --- PADDING LATERALE ---
+            padding: dp(12), 0, dp(12), dp(12)
+            spacing: dp(10)
 
-            # -----------------------------------------------------------------
-            # HEADER / TITOLO (Fisso in alto) - ALTEZZA FISSA: 130dp
-            # -----------------------------------------------------------------
+            # HEADER / TITOLO
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_y: None
-                height: dp(130) # Altezza fissa per coerenza con le altre schermate
+                height: dp(140)
                 spacing: dp(5)
-                # Padding esterno rimosso (spostato all'interno dei sottocontenitori)
-                padding: dp(0), dp(5), dp(0), dp(0) # Padding verticale
+                padding: dp(0), dp(5), dp(0), dp(0)
 
-                # 1. Spazio Dedicato al Menu Button e Anchor (FloatLayout per la sovrapposizione)
-                FloatLayout:
+                Widget:
                     size_hint_y: None
-                    height: dp(40)
-                    # Aggiunto padding laterale solo qui per il bottone Menu
-                    padding: dp(12), dp(0), dp(12), dp(0)
-
-                    # 1a. ANCORA INVISIBILE (Necessaria per il DropDownMenu)
-                    Label:
-                        id: menu_anchor
-                        size_hint: None, None
-                        width: dp(150)
-                        height: dp(1)
-                        # Posizionato per apparire in alto a destra
-                        pos_hint: {"right": 0.95, "top": 0.95}
-                        color: 0, 0, 0, 0
-
-                    # 1b. MENU BUTTON (Il bottone effettiavo)
-                    MenuButton:
-                        # La posizione è adattata al nuovo padding del FloatLayout
-                        pos_hint: {"right": 0.955, "top": 0.57}
-                        on_release: app.show_main_menu(root.ids.menu_anchor)
+                    height: dp(50)
 
                 # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
-                    spacing: dp(5)
-                    padding: dp(12), dp(0), dp(12), dp(0) # Padding laterale per l'immagine
 
                     Image:
                         source: 'materiale/archivio_rosati_base.png'
@@ -4995,8 +4977,6 @@
             ScrollView:
                 size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
                 do_scroll_x: False
-                # Padding laterale spostato qui per centrare il contenuto scorrevole
-                padding: dp(0), dp(0), dp(0), dp(0) # Rimuovi padding ScrollView, usa quello del GridLayout interno
 
                 # GRIDLAYOUT (Contenitore dinamico delle schede)
                 GridLayout:
@@ -5006,7 +4986,7 @@
                     size_hint_y: None
                     # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(0) # Padding superiore per staccare dall'header
+                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
 
 
 #==============================================================================
