@@ -6,6 +6,10 @@ title = Degustazione Vino
 # Nome del pacchetto
 package.name = WineTastingApp
 
+# (str) Icon of the application
+# Deve puntare al percorso del tuo file immagine
+icon.filename = %(source.dir)s/icona.png
+
 # Dominio del pacchetto
 package.domain = com.vino.kivyapp
 
