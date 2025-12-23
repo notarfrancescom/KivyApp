@@ -10,6 +10,9 @@ package.name = WineTastingApp
 # Deve puntare al percorso del tuo file immagine
 icon.filename = %(source.dir)s/icona.png
 
+# (str) Presplash of the application
+presplash.filename = %(source.dir)s/materiale/iniziale.png
+
 # Dominio del pacchetto
 package.domain = com.vino.kivyapp
 
