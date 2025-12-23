@@ -28,9 +28,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-Window.size = (360, 640)
+#Window.size = (360, 640)
 #Window.size = (1080, 1920)
-Window.resizable = False
+#Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -111,8 +111,8 @@ class BaseScreen(Screen):
         # Questo risolve il problema del bottone che resta "incastrato" in arancione
         Clock.schedule_once(self._force_menu_reset, 0.1)
 
-        # 3. Se siamo in modalità modifica, evidenzia i valori
-        if app.card_to_update_id is not None:
+        # 3. Se siamo in modalità modifica o degustazione, evidenzia i valori
+        if self.SELECTION_KEYS:
             self._apply_selections(app, self.SELECTION_KEYS)
 
     def _force_menu_reset(self, dt):
@@ -261,19 +261,6 @@ class RedWineNoseScreen(BaseScreen):
         'profumo_rosso_box'
     ]
 
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori (metodo della BaseScreen)
-        self._reset_button_colors()
-
-        # Se siamo in modifica, applica le selezioni caricate
-        if app.card_to_update_id is not None:
-            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
-            print(f"DEBUG NASO: {app.selections}")
-            self._apply_selections(app, self.SELECTION_KEYS)
-
 
 class RedWineTasteScreen(BaseScreen):
     """Schermata per la fase 'Palato' del vino rosso."""
@@ -286,16 +273,6 @@ class RedWineTasteScreen(BaseScreen):
                       'sapore_rosso_box',
                       'persistenza_rosso_box'
                       ]
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori
-        self._reset_button_colors()
-
-        # Se siamo in modifica, evidenzia i valori salvati
-        if app.card_to_update_id is not None:
-            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class RedWineEpilogueScreen(BaseScreen):
@@ -304,12 +281,6 @@ class RedWineEpilogueScreen(BaseScreen):
     def on_enter(self, *args):
         # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
         super().on_enter(*args)
-
-        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
-        menu_btn = self.ids.get('menu_button')
-        if menu_btn:
-            menu_btn.state = 'normal'
-    pass
 
 
 class RedWineInfoScreen(Screen):
@@ -360,13 +331,6 @@ class RedWineInfoScreen(Screen):
             if btn_salva:
                 btn_salva.text = 'Salva'
 
-            # Se la schermata Info non si auto-resetta dopo il salvataggio:
-            # self.ids['nome_rosso'].text = ''
-            # self.ids['produttore_rosso'].text = ''
-            # self.ids['annata_rosso'].text = ''
-            # self.ids['alcol_rosso'].text = 'Gradazione alcolica'
-
-
 class WhiteWineViewScreen(BaseScreen):
     """Schermata per la fase 'Vista' del vino bianco."""
     # Le chiavi devono corrispondere esattamente agli ID dei BoxLayout nel KV!
@@ -384,19 +348,6 @@ class WhiteWineNoseScreen(BaseScreen):
         'profumo_bianco_box'
     ]
 
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori (metodo della BaseScreen)
-        self._reset_button_colors()
-
-        # Se siamo in modifica, applica le selezioni caricate
-        if app.card_to_update_id is not None:
-            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
-            print(f"DEBUG NASO: {app.selections}")
-            self._apply_selections(app, self.SELECTION_KEYS)
-
 
 class WhiteWineTasteScreen(BaseScreen):
     """Schermata per la fase 'Palato' del vino bianco."""
@@ -409,17 +360,6 @@ class WhiteWineTasteScreen(BaseScreen):
                       'sapore_bianco_box',
                       'persistenza_bianco_box'
                       ]
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori
-        self._reset_button_colors()
-
-        # Se siamo in modifica, evidenzia i valori salvati
-        if app.card_to_update_id is not None:
-            self._apply_selections(app, self.SELECTION_KEYS)
-
 
 class WhiteWineEpilogueScreen(BaseScreen):
     """Schermata di 'Conclusione' del vino rosso."""
@@ -427,12 +367,6 @@ class WhiteWineEpilogueScreen(BaseScreen):
     def on_enter(self, *args):
         # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
         super().on_enter(*args)
-
-        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
-        menu_btn = self.ids.get('menu_button')
-        if menu_btn:
-            menu_btn.state = 'normal'
-    pass
 
 
 class WhiteWineInfoScreen(Screen):
@@ -483,13 +417,6 @@ class WhiteWineInfoScreen(Screen):
             if btn_salva:
                 btn_salva.text = 'Salva'
 
-            # Se la schermata Info non si auto-resetta dopo il salvataggio:
-            # self.ids['nome_bianco'].text = ''
-            # self.ids['produttore_bianco'].text = ''
-            # self.ids['annata_bianco'].text = ''
-            # self.ids['alcol_bianco'].text = 'Gradazione alcolica'
-
-
 class PinkWineViewScreen(BaseScreen):
     """Schermata per la fase 'Vista' del vino rosato."""
     # Le chiavi devono corrispondere esattamente agli ID dei BoxLayout nel KV!
@@ -508,19 +435,6 @@ class PinkWineNoseScreen(BaseScreen):
         'profumo_rosato_box'
     ]
 
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori (metodo della BaseScreen)
-        self._reset_button_colors()
-
-        # Se siamo in modifica, applica le selezioni caricate
-        if app.card_to_update_id is not None:
-            # DEBUG: stampa cosa c'è in app.selections se ancora non vedi nulla
-            print(f"DEBUG NASO: {app.selections}")
-            self._apply_selections(app, self.SELECTION_KEYS)
-
 
 class PinkWineTasteScreen(BaseScreen):
     """Schermata per la fase 'Palato' del vino rosato."""
@@ -533,16 +447,6 @@ class PinkWineTasteScreen(BaseScreen):
                       'sapore_rosato_box',
                       'persistenza_rosato_box'
                       ]
-    def on_enter(self, *args):
-        super().on_enter(*args)
-        app = App.get_running_app()
-
-        # Reset dei colori
-        self._reset_button_colors()
-
-        # Se siamo in modifica, evidenzia i valori salvati
-        if app.card_to_update_id is not None:
-            self._apply_selections(app, self.SELECTION_KEYS)
 
 
 class PinkWineEpilogueScreen(BaseScreen):
@@ -551,12 +455,6 @@ class PinkWineEpilogueScreen(BaseScreen):
     def on_enter(self, *args):
         # 🚨 IMPORTANTE: Chiama la logica di caricamento dati del genitore
         super().on_enter(*args)
-
-        # Forza lo stato del MenuButton su 'normal' per resettare l'immagine
-        menu_btn = self.ids.get('menu_button')
-        if menu_btn:
-            menu_btn.state = 'normal'
-    pass
 
 
 class PinkWineInfoScreen(Screen):
@@ -606,13 +504,6 @@ class PinkWineInfoScreen(Screen):
             # (o resettati da confirm_and_save) e che il bottone dica "Salva Scheda"
             if btn_salva:
                 btn_salva.text = 'Salva'
-
-            # Se la schermata Info non si auto-resetta dopo il salvataggio:
-            # self.ids['nome_rosato'].text = ''
-            # self.ids['produttore_rosato'].text = ''
-            # self.ids['annata_rosato'].text = ''
-            # self.ids['alcol_rosato'].text = 'Gradazione alcolica'
-
 
 class RedWineCardItem(ButtonBehavior, GridLayout):
     """
@@ -717,7 +608,6 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
         )
         # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
-        #btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'rosso'))
         button_box.add_widget(btn_delete)
 
         # B. Bottone Modifica Scheda
@@ -729,7 +619,6 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.1, 0.7, 0.1, 1)  # Verde
         )
         # Collega all'azione di avvio modifica e chiudi il popup
-        #btn_edit.bind(on_release=lambda instance: self.start_edit_flow(popup))
         button_box.add_widget(btn_edit)
 
         # C. Bottone Chiudi/Annulla
@@ -741,7 +630,6 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
         )
         # Collega l'azione di chiusura del popup
-        #btn_close.bind(on_release=popup.dismiss)  # NOTA: 'popup' viene definito più in basso
         button_box.add_widget(btn_close)
 
         # 6. Contenitore finale del Popup (per Scrollview e Bottone)
@@ -917,7 +805,6 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
         )
         # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
-        # btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'bianco'))
         button_box.add_widget(btn_delete)
 
         # B. Bottone Modifica Scheda
@@ -929,7 +816,6 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.1, 0.7, 0.1, 1)  # Verde
         )
         # Collega all'azione di avvio modifica e chiudi il popup
-        # btn_edit.bind(on_release=lambda instance: self.start_edit_flow(popup))
         button_box.add_widget(btn_edit)
 
         # C. Bottone Chiudi/Annulla
@@ -941,7 +827,6 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
         )
         # Collega l'azione di chiusura del popup
-        # btn_close.bind(on_release=popup.dismiss)  # NOTA: 'popup' viene definito più in basso
         button_box.add_widget(btn_close)
 
         # 6. Contenitore finale del Popup (per Scrollview e Bottone)
@@ -1007,9 +892,6 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
 
         app = App.get_running_app()
         # Il colore del vino è implicito dalla schermata di archivio (es. 'bianco')
-        # Se usi un campo colore nel DB:
-        wine_color = self.wine_data.get('colore_vino', 'bianco')
-        # Altrimenti, assumi che RedWineCardItem gestisca solo il bianco:
         wine_color = 'bianco'
 
         # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
@@ -1123,7 +1005,6 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
         )
         # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
-        # btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'rosato'))
         button_box.add_widget(btn_delete)
 
         # B. Bottone Modifica Scheda
@@ -1135,7 +1016,6 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.1, 0.7, 0.1, 1)  # Verde
         )
         # Collega all'azione di avvio modifica e chiudi il popup
-        # btn_edit.bind(on_release=lambda instance: self.start_edit_flow(popup))
         button_box.add_widget(btn_edit)
 
         # C. Bottone Chiudi/Annulla
@@ -1147,7 +1027,6 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
             background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
         )
         # Collega l'azione di chiusura del popup
-        # btn_close.bind(on_release=popup.dismiss)  # NOTA: 'popup' viene definito più in basso
         button_box.add_widget(btn_close)
 
         # 6. Contenitore finale del Popup (per Scrollview e Bottone)
@@ -1213,9 +1092,6 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
 
         app = App.get_running_app()
         # Il colore del vino è implicito dalla schermata di archivio (es. 'rosso')
-        # Se usi un campo colore nel DB:
-        wine_color = self.wine_data.get('colore_vino', 'rosato')
-        # Altrimenti, assumi che RedWineCardItem gestisca solo il rosato:
         wine_color = 'rosato'
 
         # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
