@@ -1,7 +1,7 @@
 [app]
 
 # Titolo dell'app
-title = Degustazione Vino
+title = DegustaVino
 
 # Nome del pacchetto
 package.name = WineTastingApp
