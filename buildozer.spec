@@ -62,10 +62,10 @@ android.minapi = 21
 
 # ARCHITETTURE E RAMO P4A (Aggiungilo qui)
 android.archs = arm64-v8a, armeabi-v7a
-p4a.branch = master
+#p4a.branch = master
 
 # Versione NDK (compatibile con python-for-android)
-android.ndk = 25b
+android.ndk = 25c
 
 # Percorso NDK (Lascia commentato se usi l'installazione automatica di buildozer)
 # android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk/25b
