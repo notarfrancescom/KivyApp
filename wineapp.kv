@@ -4771,11 +4771,10 @@
             id: menu_anchor
             size_hint: None, None
             size: dp(1), dp(1)
-            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+            pos_hint: {"right": 0.95, "top": 0.92}
 
         MenuButton:
             id: menu_button
-            # Coordinate bloccate per eliminare il "salto" visivo
             pos_hint: {"right": 0.98, "top": 0.98}
             on_release: app.show_main_menu(root.ids.menu_anchor)
 
@@ -4785,7 +4784,6 @@
         BoxLayout:
             orientation: 'vertical'
             size: root.size
-            # --- PADDING LATERALE ---
             padding: dp(12), 0, dp(12), dp(12)
             spacing: dp(10)
 
@@ -4801,36 +4799,66 @@
                     size_hint_y: None
                     height: dp(50)
 
-                # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
-                    #spacing: dp(5)
-                    #padding: dp(12), dp(0), dp(12), dp(0) # Padding laterale per l'immagine
 
                     Image:
                         source: 'materiale/archivio_rossi_base.png'
-                        size_hint_y: 1.0 # Occupa tutto lo spazio rimanente
+                        size_hint_y: 1.0
                         allow_stretch: True
                         keep_ratio: False
 
-            # SCROLLVIEW (Contenitore scorrevole)
-            # Occupa lo spazio rimanente
-            ScrollView:
-                size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
-                do_scroll_x: False
-                # Padding laterale spostato qui per centrare il contenuto scorrevole
-                #padding: dp(0), dp(0), dp(0), dp(0) # Rimuovi padding ScrollView, usa quello del GridLayout interno
+            # BARRA DI ORDINAMENTO
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: dp(35)
+                spacing: dp(6)
 
-                # GRIDLAYOUT (Contenitore dinamico delle schede)
+                Label:
+                    text: "Ordina:"
+                    size_hint_x: 0.22
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    color: (0.9, 0.2, 0.2, 1)
+                    halign: 'right'
+                    valign: 'middle'
+                    text_size: self.size
+
+                Spinner:
+                    id: spinner_ordinamento
+                    text: 'Inserimento'
+                    values: ['Inserimento', 'Nome', 'Annata', 'Gradazione', 'Giudizio', 'Data']
+                    size_hint_x: 0.58
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    background_color: (0.9, 0.2, 0.2, 0.8)
+                    color: (1, 1, 1, 1)
+                    on_text: root.load_archive_data(self.text)
+
+                Button:
+                    id: btn_direction
+                    text: "▲" if root.is_crescente else "▼"
+                    size_hint_x: 0.20
+                    font_name: 'DejaVuSans'
+                    font_size: '14sp'
+                    background_color: (0.9, 0.2, 0.2, 0.9)
+                    color: (1, 1, 1, 1)
+                    on_release: root.toggle_ordine_direzione()
+
+            # SCROLLVIEW (Contenitore scorrevole)
+            ScrollView:
+                size_hint_y: 1.0
+                do_scroll_x: False
+
                 GridLayout:
                     id: archive_container
                     cols: 1
-                    spacing: dp(10) # Spacing fisso
+                    spacing: dp(10)
                     size_hint_y: None
-                    # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
+                    padding: dp(0), dp(5), dp(0), dp(10)
 
 
 # ==============================================================================
@@ -4853,11 +4881,10 @@
             id: menu_anchor
             size_hint: None, None
             size: dp(1), dp(1)
-            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+            pos_hint: {"right": 0.95, "top": 0.92}
 
         MenuButton:
             id: menu_button
-            # Coordinate bloccate per eliminare il "salto" visivo
             pos_hint: {"right": 0.98, "top": 0.98}
             on_release: app.show_main_menu(root.ids.menu_anchor)
 
@@ -4867,7 +4894,6 @@
         BoxLayout:
             orientation: 'vertical'
             size: root.size
-            # --- PADDING LATERALE ---
             padding: dp(12), 0, dp(12), dp(12)
             spacing: dp(10)
 
@@ -4883,32 +4909,66 @@
                     size_hint_y: None
                     height: dp(50)
 
-                # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
 
                     Image:
                         source: 'materiale/archivio_bianchi_base.png'
-                        size_hint_y: 1.0 # Occupa tutto lo spazio rimanente
+                        size_hint_y: 1.0
                         allow_stretch: True
                         keep_ratio: False
 
+            # BARRA DI ORDINAMENTO
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: dp(35)
+                spacing: dp(6)
+
+                Label:
+                    text: "Ordina:"
+                    size_hint_x: 0.22
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    color: (0.85, 0.75, 0.2, 1)
+                    halign: 'right'
+                    valign: 'middle'
+                    text_size: self.size
+
+                Spinner:
+                    id: spinner_ordinamento
+                    text: 'Inserimento'
+                    values: ['Inserimento', 'Nome', 'Annata', 'Gradazione', 'Giudizio', 'Data']
+                    size_hint_x: 0.58
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    background_color: (0.85, 0.75, 0.2, 0.8)
+                    color: (1, 1, 1, 1)
+                    on_text: root.load_archive_data(self.text)
+
+                Button:
+                    id: btn_direction
+                    text: "▲" if root.is_crescente else "▼"
+                    size_hint_x: 0.20
+                    font_name: 'DejaVuSans'  # Forza il font di sistema Kivy con supporto Unicode completo
+                    font_size: '14sp'
+                    background_color: (0.85, 0.75, 0.2, 0.9)
+                    color: (1, 1, 1, 1)
+                    on_release: root.toggle_ordine_direzione()
+
             # SCROLLVIEW (Contenitore scorrevole)
-            # Occupa lo spazio rimanente
             ScrollView:
-                size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
+                size_hint_y: 1.0
                 do_scroll_x: False
 
-                # GRIDLAYOUT (Contenitore dinamico delle schede)
                 GridLayout:
                     id: archive_container
                     cols: 1
-                    spacing: dp(10) # Spacing fisso
+                    spacing: dp(10)
                     size_hint_y: None
-                    # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
+                    padding: dp(0), dp(5), dp(0), dp(10)
 
 
 # ==============================================================================
@@ -4931,11 +4991,10 @@
             id: menu_anchor
             size_hint: None, None
             size: dp(1), dp(1)
-            pos_hint: {"right": 0.95, "top": 0.92} # IDENTICO a tutte le altre
+            pos_hint: {"right": 0.95, "top": 0.92}
 
         MenuButton:
             id: menu_button
-            # Coordinate bloccate per eliminare il "salto" visivo
             pos_hint: {"right": 0.98, "top": 0.98}
             on_release: app.show_main_menu(root.ids.menu_anchor)
 
@@ -4945,7 +5004,6 @@
         BoxLayout:
             orientation: 'vertical'
             size: root.size
-            # --- PADDING LATERALE ---
             padding: dp(12), 0, dp(12), dp(12)
             spacing: dp(10)
 
@@ -4961,128 +5019,165 @@
                     size_hint_y: None
                     height: dp(50)
 
-                # 2. Contenuto Effettivo dell'Header (Sotto il Menu)
                 BoxLayout:
                     orientation: 'vertical'
                     size_hint_y: 1
 
                     Image:
                         source: 'materiale/archivio_rosati_base.png'
-                        size_hint_y: 1.0 # Occupa tutto lo spazio rimanente
+                        size_hint_y: 1.0
                         allow_stretch: True
                         keep_ratio: False
 
+            # BARRA DI ORDINAMENTO
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: dp(35)
+                spacing: dp(6)
+
+                Label:
+                    text: "Ordina:"
+                    size_hint_x: 0.22
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    color: (0.9, 0.4, 0.5, 1)
+                    halign: 'right'
+                    valign: 'middle'
+                    text_size: self.size
+
+                Spinner:
+                    id: spinner_ordinamento
+                    text: 'Inserimento'
+                    values: ['Inserimento', 'Nome', 'Annata', 'Gradazione', 'Giudizio', 'Data']
+                    size_hint_x: 0.58
+                    font_name: 'materiale/comicbd.ttf'
+                    font_size: '13sp'
+                    background_color: (0.9, 0.4, 0.5, 0.8)
+                    color: (1, 1, 1, 1)
+                    on_text: root.load_archive_data(self.text)
+
+                Button:
+                    id: btn_direction
+                    text: "▲" if root.is_crescente else "▼"
+                    size_hint_x: 0.20
+                    font_name: 'DejaVuSans'
+                    font_size: '14sp'
+                    background_color: (0.9, 0.4, 0.5, 0.9)
+                    color: (1, 1, 1, 1)
+                    on_release: root.toggle_ordine_direzione()
+
             # SCROLLVIEW (Contenitore scorrevole)
-            # Occupa lo spazio rimanente
             ScrollView:
-                size_hint_y: 1.0 # Prende tutto lo spazio y restante nel BoxLayout principale
+                size_hint_y: 1.0
                 do_scroll_x: False
 
-                # GRIDLAYOUT (Contenitore dinamico delle schede)
                 GridLayout:
                     id: archive_container
                     cols: 1
-                    spacing: dp(10) # Spacing fisso
+                    spacing: dp(10)
                     size_hint_y: None
-                    # Importante: l'altezza si adatta al numero di schede figlie
                     height: self.minimum_height
-                    padding: dp(0), dp(10), dp(0), dp(10) # Padding superiore per staccare dall'header
-
+                    padding: dp(0), dp(5), dp(0), dp(10)
 
 #==============================================================================
 #Card vino rosso - Layout Proporzionale
 #==============================================================================
 
 <RedWineCardItem>:
-    # Widget radice: GridLayout a 4 colonne per la riga della tabella
-    cols: 4
+    # 1. Portiamo le colonne a 5 per accogliere la Data
+    cols: 5
     size_hint_y: None
-    # Altezza proporzionale rispetto all'altezza del contenitore ScrollView/GridLayout
     height: dp(40)
-    padding: root.height * 0.05 # Padding relativo (2dp è circa il 5% di 40dp)
-    spacing: root.height * 0.05 # Spacing relativo
+    padding: root.height * 0.05
+    spacing: root.height * 0.05
 
-    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
     on_release: root.toggle_expand_red()
 
-    # Stile per la riga (opzionale, per distinguere le schede)
     canvas.before:
         Color:
-            # Se l'indice è PARI (resto 0) usa il rosso tenue altrimenti usa il colore più chiaro
             rgba: (0.7, 0.45, 0.45, 1) if root.row_index % 2 == 0 else (0.8, 0.6, 0.6, 1)
         Rectangle:
             size: self.size
             pos: self.pos
 
     # =========================================================================
-    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
-    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # COLONNA 1: Nome Vino + Produttore
     # =========================================================================
     BoxLayout:
         orientation: 'vertical'
-        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
-        # Padding verticale interno (root.height * 0.05 simula dp(2))
+        size_hint_x: 0.45  # Ridotto leggermente da 0.60 a 0.45 per far spazio
         padding: [0, root.height * 0.05, 0, root.height * 0.05]
 
-        # Linea 1: NOME VINO
         Label:
             text: root.wine_data.get('nome_rosso', 'N/D')
-            font_size: root.height * 0.325 # Font size relativo all'altezza della riga (es. 13sp su 40dp)
+            font_size: root.height * 0.325
             font_name: 'materiale/comicbd.ttf'
             bold: True
             halign: 'left'
             valign: 'top'
             text_size: self.width, self.height
             size_hint_y: 0.65
-            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+            color: 0.12, 0.12, 0.12, 1
 
-        # Linea 2: PRODUTTORE
         Label:
             text: root.wine_data.get('produttore_rosso', 'N/D')
-            font_size: root.height * 0.275 # Font size relativo
+            font_size: root.height * 0.275
             font_name: 'materiale/comicbd.ttf'
-            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            color: 0.2, 0.2, 0.2, 1
             halign: 'left'
             valign: 'bottom'
             text_size: self.width, self.height
             size_hint_y: 0.35
 
     # =========================================================================
-    # COLONNA 2: Anno (Etichetta singola)
+    # COLONNA 2: Anno
     # =========================================================================
     Label:
         text: root.wine_data.get('annata_rosso', 'N/D')
-        font_size: root.height * 0.25 # Font size relativo
+        font_size: root.height * 0.25
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.12 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # COLONNA 3: Gradazione Alcolica
     # =========================================================================
     Label:
         text: root.wine_data.get('alcol_rosso', 'N/D')
-        font_size: root.height * 0.25 # Font size relativo
+        font_size: root.height * 0.25
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.1 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # COLONNA 4: Giudizio Finale
     # =========================================================================
     Label:
         text: root.wine_data.get('qualita_rosso', 'N/D')
-        font_size: root.height * 0.25 # Font size relativo
+        font_size: root.height * 0.23
         font_name: 'materiale/comicbd.ttf'
         bold: True
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.18 # 20% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.17
+        color: 0.12, 0.12, 0.12, 1
+
+    # =========================================================================
+    # COLONNA 5: Data Ultimo Aggiornamento / Inserimento (NUOVA)
+    # =========================================================================
+    Label:
+        text: app.formatta_data(root.wine_data.get('data_modifica', '')) if hasattr(app, 'formatta_data') else ''
+        font_size: root.height * 0.22
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.16
+        color: 0.2, 0.2, 0.2, 1
 
 
 #==============================================================================
@@ -5090,35 +5185,33 @@
 #==============================================================================
 
 <WhiteWineCardItem>:
-    # Widget radice: GridLayout a 4 colonne per la riga della tabella
-    cols: 4
+    # 1. Portiamo le colonne a 5 per accogliere la Data
+    cols: 5
     size_hint_y: None
     height: dp(40)
     padding: root.height * 0.05
     spacing: root.height * 0.05
 
-    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
+    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup del bianco
     on_release: root.toggle_expand_white()
 
-    # Stile per la riga (opzionale, per distinguere le schede)
+    # Stile per la riga (Giallo/Oro chiaro alternato)
     canvas.before:
         Color:
-            # Se l'indice è PARI (resto 0) usa il Giallo/Oro più scuro altrimenti usa il Giallo/Oro più chiaro
             rgba: (0.9, 0.85, 0.55, 1) if root.row_index % 2 == 0 else (0.95, 0.9, 0.75, 1)
         Rectangle:
             size: self.size
             pos: self.pos
 
     # =========================================================================
-    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
-    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # COLONNA 1: Nome Vino + Produttore
     # =========================================================================
     BoxLayout:
         orientation: 'vertical'
-        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
+        size_hint_x: 0.45  # Ribilanciato da 0.60 a 0.45 per far spazio
         padding: [0, root.height * 0.05, 0, root.height * 0.05]
 
-        # Linea 1: NOME VINO
+        # Linea 1: NOME VINO BIANCO
         Label:
             text: root.wine_data.get('nome_bianco', 'N/D')
             font_size: root.height * 0.325
@@ -5128,21 +5221,21 @@
             valign: 'top'
             text_size: self.width, self.height
             size_hint_y: 0.65
-            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+            color: 0.12, 0.12, 0.12, 1
 
-        # Linea 2: PRODUTTORE
+        # Linea 2: PRODUTTORE BIANCO
         Label:
             text: root.wine_data.get('produttore_bianco', 'N/D')
             font_size: root.height * 0.275
             font_name: 'materiale/comicbd.ttf'
-            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            color: 0.2, 0.2, 0.2, 1
             halign: 'left'
             valign: 'bottom'
             text_size: self.width, self.height
             size_hint_y: 0.35
 
     # =========================================================================
-    # COLONNA 2: Anno (Etichetta singola)
+    # COLONNA 2: Anno
     # =========================================================================
     Label:
         text: root.wine_data.get('annata_bianco', 'N/D')
@@ -5150,11 +5243,11 @@
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.12 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # COLONNA 3: Gradazione Alcolica
     # =========================================================================
     Label:
         text: root.wine_data.get('alcol_bianco', 'N/D')
@@ -5162,56 +5255,66 @@
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.1 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # COLONNA 4: Giudizio Finale
     # =========================================================================
     Label:
         text: root.wine_data.get('qualita_bianco', 'N/D')
-        font_size: root.height * 0.25
+        font_size: root.height * 0.23
         font_name: 'materiale/comicbd.ttf'
         bold: True
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.18 # 20% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.17
+        color: 0.12, 0.12, 0.12, 1
+
+    # =========================================================================
+    # COLONNA 5: Data Ultimo Aggiornamento / Inserimento (NUOVA)
+    # =========================================================================
+    Label:
+        text: app.formatta_data(root.wine_data.get('data_modifica', '')) if hasattr(app, 'formatta_data') else ''
+        font_size: root.height * 0.22
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.16
+        color: 0.2, 0.2, 0.2, 1
 
 #==============================================================================
 #Card vino rosato - Layout Proporzionale
 #==============================================================================
 
 <PinkWineCardItem>:
-    # Widget radice: GridLayout a 4 colonne per la riga della tabella
-    cols: 4
+    # 1. Portiamo le colonne a 5 per accogliere la Data
+    cols: 5
     size_hint_y: None
     height: dp(40)
     padding: root.height * 0.05
     spacing: root.height * 0.05
 
-    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup
+    # Quando la scheda viene "rilasciata" dopo un tocco, apri il popup del rosato
     on_release: root.toggle_expand_pink()
 
-    # Stile per la riga (opzionale, per distinguere le schede)
+    # Stile per la riga (Rosa Salmone alternato)
     canvas.before:
         Color:
-            # Se l'indice è PARI (resto 0) usa il Rosa Salmone Medio altrimenti usa il Rosa molto pallido
             rgba: (0.9, 0.75, 0.75, 1) if root.row_index % 2 == 0 else (0.95, 0.85, 0.85, 1)
         Rectangle:
             size: self.size
             pos: self.pos
 
     # =========================================================================
-    # COLONNA 1: Nome Vino (Riga 1) + Produttore (Riga 2)
-    # Usiamo un BoxLayout verticale per ospitare le due righe di testo
+    # COLONNA 1: Nome Vino + Produttore
     # =========================================================================
     BoxLayout:
         orientation: 'vertical'
-        size_hint_x: 0.6 # Assegna metà della larghezza alla prima colonna (regola in base a preferenza)
+        size_hint_x: 0.45  # Ribilanciato da 0.60 a 0.45 per far spazio
         padding: [0, root.height * 0.05, 0, root.height * 0.05]
 
-        # Linea 1: NOME VINO
+        # Linea 1: NOME VINO ROSATO
         Label:
             text: root.wine_data.get('nome_rosato', 'N/D')
             font_size: root.height * 0.325
@@ -5221,21 +5324,21 @@
             valign: 'top'
             text_size: self.width, self.height
             size_hint_y: 0.65
-            color: 0.12, 0.12, 0.12, 1 # Antracite per alto contrasto
+            color: 0.12, 0.12, 0.12, 1
 
-        # Linea 2: PRODUTTORE
+        # Linea 2: PRODUTTORE ROSATO
         Label:
             text: root.wine_data.get('produttore_rosato', 'N/D')
             font_size: root.height * 0.275
             font_name: 'materiale/comicbd.ttf'
-            color: 0.2, 0.2, 0.2, 1 # Grigio scuro per distinguere
+            color: 0.2, 0.2, 0.2, 1
             halign: 'left'
             valign: 'bottom'
             text_size: self.width, self.height
             size_hint_y: 0.35
 
     # =========================================================================
-    # COLONNA 2: Anno (Etichetta singola)
+    # COLONNA 2: Anno
     # =========================================================================
     Label:
         text: root.wine_data.get('annata_rosato', 'N/D')
@@ -5243,11 +5346,11 @@
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.12 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 3: Gradazione Alcolica (Etichetta singola)
+    # COLONNA 3: Gradazione Alcolica
     # =========================================================================
     Label:
         text: root.wine_data.get('alcol_rosato', 'N/D')
@@ -5255,22 +5358,33 @@
         font_name: 'materiale/comicbd.ttf'
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.1 # 15% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.11
+        color: 0.12, 0.12, 0.12, 1
 
     # =========================================================================
-    # COLONNA 4: Giudizio Finale (Etichetta singola)
+    # COLONNA 4: Giudizio Finale
     # =========================================================================
     Label:
         text: root.wine_data.get('qualita_rosato', 'N/D')
-        font_size: root.height * 0.25
+        font_size: root.height * 0.23
         font_name: 'materiale/comicbd.ttf'
         bold: True
         halign: 'center'
         valign: 'middle'
-        size_hint_x: 0.18 # 20% della larghezza
-        color: 0.12, 0.12, 0.12, 1 # Antracite
+        size_hint_x: 0.17
+        color: 0.12, 0.12, 0.12, 1
 
+    # =========================================================================
+    # COLONNA 5: Data Ultimo Aggiornamento / Inserimento (NUOVA)
+    # =========================================================================
+    Label:
+        text: app.formatta_data(root.wine_data.get('data_modifica', '')) if hasattr(app, 'formatta_data') else ''
+        font_size: root.height * 0.22
+        font_name: 'materiale/comicbd.ttf'
+        halign: 'center'
+        valign: 'middle'
+        size_hint_x: 0.16
+        color: 0.2, 0.2, 0.2, 1
 # ---
 # Stile per le etichette di dato (da definire o riutilizzare)
 <WineDataLabel@Label>:

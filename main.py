@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
+import os
+import shutil
+from datetime import datetime
 import kivy
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.lang import Builder
 from kivy.uix.button import Button
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle
+from kivy.uix.filechooser import FileChooserListView
+from kivy.uix.modalview import ModalView
+from kivy.graphics import Color, Rectangle, RoundedRectangle, Ellipse, Line
 from kivy.clock import Clock
 from kivy.metrics import dp  # Per definire le dimensioni in modo indipendente dalla densità
 from kivy.uix.dropdown import DropDown
@@ -16,9 +21,16 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.uix.scrollview import ScrollView
 from kivy.properties import StringProperty, DictProperty, NumericProperty, BooleanProperty, ListProperty
+from kivy.utils import platform
 from tinydb import TinyDB, Query
 import json  # Utile per visualizzare i dati per debug
 from kivy.core.window import Window
+
+# reportlab per il PDF
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 # Importa i widget utilizzati nel KV
 from kivy.uix.image import Image
@@ -34,6 +46,110 @@ from kivy.uix.spinner import Spinner
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
+
+
+def get_export_folder():
+    """
+    Restituisce il percorso adatto per l'esportazione:
+    - Su Android: usa la cartella pubblica 'Download/WineApp'
+    - Su Desktop (Linux/Windows/macOS): usa la cartella locale 'esportazioni'
+    """
+    if platform == 'android':
+        try:
+            from android.storage import primary_external_storage_path
+            base_dir = primary_external_storage_path()
+        except ImportError:
+            # Fallback se non si riesce a importare la libreria android
+            base_dir = "/sdcard"
+
+        target_dir = os.path.join(base_dir, 'Download', 'WineApp')
+    else:
+        target_dir = "esportazioni"
+
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    return target_dir
+
+
+def formatta_data(raw_date):
+    """
+    Converte una data in formato ISO (es. '2026-10-09T14:30:15')
+    nel formato leggibile '09/10/26'.
+    Se la data è vuota o non valida, restituisce una stringa vuota o il valore originale.
+    """
+    if not raw_date:
+        return ""
+    try:
+        dt = datetime.fromisoformat(str(raw_date))
+        return dt.strftime("%d/%m/%y")  # Es. "09/10/26"
+    except Exception:
+        return str(raw_date)
+
+
+# Piccola classe helper per pulsanti-immagine proporzionati
+class ArrowButton(ButtonBehavior, Image):
+    def __init__(self, img_normal, img_down, action, on_click_callback, **kwargs):
+        super().__init__(**kwargs)
+        self.img_normal = img_normal
+        self.img_down = img_down
+        self.action = action
+        self.on_click_callback = on_click_callback
+
+        self.source = self.img_normal
+        self.fit_mode = "fill"  # Riempie l'area esatta del pulsante senza lasciare bordi
+        self.size_hint = (None, None)
+        self.size = (dp(70), dp(32))
+
+    def on_press(self):
+        self.source = self.img_down
+
+    def on_release(self):
+        self.source = self.img_normal
+        self.on_click_callback()
+        self.action()
+
+
+class ImageButtonMenu(ButtonBehavior, BoxLayout):
+    """Pulsante personalizzato per le voci del sottomenu."""
+    def __init__(self, img_normal, img_down, action, submenu, parent_app, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = 'horizontal'
+        self.size_hint = (None, None)
+        self.size = (dp(220), dp(44))
+        self.padding = [dp(10), dp(5)]
+
+        self.img_normal = img_normal
+        self.img_down = img_down
+        self.action = action
+        self.submenu = submenu
+        self.parent_app = parent_app
+
+        # Sfondo scuro disegnato sul Canvas
+        with self.canvas.before:
+            Color(0.18, 0.18, 0.18, 0.95)
+            self.bg_rect = Rectangle(size=self.size, pos=self.pos)
+
+        self.bind(pos=self._update_bg, size=self._update_bg)
+
+        self.icon = Image(
+            source=self.img_normal,
+            size_hint=(1, 1),
+            fit_mode="contain"
+        )
+        self.add_widget(self.icon)
+
+    def _update_bg(self, *args):
+        self.bg_rect.pos = self.pos
+        self.bg_rect.size = self.size
+
+    def on_press(self):
+        self.icon.source = self.img_down
+
+    def on_release(self):
+        self.icon.source = self.img_normal
+        if hasattr(self.parent_app, '_execute_menu_action'):
+            self.parent_app._execute_menu_action(self.submenu, self.action)
 
 
 class RoundedButton(ButtonBehavior, BoxLayout):
@@ -84,6 +200,83 @@ class RoundedButton(ButtonBehavior, BoxLayout):
         """Aggiorna la posizione e la dimensione del rettangolo sullo schermo."""
         self.rect.pos = instance.pos
         self.rect.size = instance.size
+
+
+# Aggiungi questa classe subito dopo le tue classi esistenti (dopo RoundedButton)
+
+class CustomOvalButton(Button):
+    """ Bottone ovale/ellittico personalizzato con bordo colorato per esportazione """
+    bg_color = ListProperty([0.18, 0.54, 0.34, 1])
+    border_color = ListProperty([0.0, 0.7, 0.9, 1])
+
+    def __init__(self, **kwargs):
+        # Estraiamo eventuali argomenti non standard prima di super()
+        action = kwargs.pop('action', None)
+
+        super().__init__(**kwargs)
+
+        self.action = action
+        self.background_color = (0, 0, 0, 0)  # Rimuove lo sfondo rettangolare di Kivy
+
+        # Binding per aggiornare il disegno su movimento o ridimensionamento
+        self.bind(
+            pos=self._update_canvas,
+            size=self._update_canvas,
+            bg_color=self._update_canvas,
+            border_color=self._update_canvas
+        )
+
+    def _update_canvas(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            # Riempimento Ovale
+            Color(*self.bg_color)
+            Ellipse(pos=self.pos, size=self.size)
+
+            # Bordo Ovale (Azzurro/Ciano)
+            Color(*self.border_color)
+            Line(ellipse=(self.x, self.y, self.width, self.height), width=2)
+
+
+# Funzione Helper di Ordinamento Globale
+def ordina_lista_vini(lista_vini, criterio="Inserimento", tipo_vino="rosso", crescente=False):
+    """
+    Ordina una lista di vini in base al criterio selezionato e al verso (crescente/decrescente).
+    """
+    if criterio == "Inserimento" or not criterio:
+        # Se è per inserimento e si vuole invertire, basta invertire la lista
+        return list(reversed(lista_vini)) if crescente else list(lista_vini)
+
+    suf = f"_{tipo_vino}"
+
+    def get_num(val, default=0.0):
+        try:
+            import re
+            match = re.search(r"[-+]?\d*\.\d+|\d+", str(val))
+            return float(match.group()) if match else default
+        except Exception:
+            return default
+
+    vini_ordinati = list(lista_vini)
+
+    # Determina l'ordinamento base
+    if criterio == "Nome":
+        vini_ordinati.sort(key=lambda x: str(x.get(f'nome{suf}', x.get('nome', ''))).lower(), reverse=not crescente)
+
+    elif criterio == "Annata":
+        vini_ordinati.sort(key=lambda x: get_num(x.get(f'annata{suf}', x.get('annata', 0))), reverse=not crescente)
+
+    elif criterio == "Gradazione":
+        vini_ordinati.sort(key=lambda x: get_num(x.get(f'alcol{suf}', x.get('alcol', 0))), reverse=not crescente)
+
+    elif criterio == "Giudizio":
+        vini_ordinati.sort(key=lambda x: str(x.get(f'qualita{suf}', x.get('qualita', ''))).lower(),
+                           reverse=not crescente)
+
+    elif criterio == "Data":
+        vini_ordinati.sort(key=lambda x: str(x.get('data_modifica', '')), reverse=not crescente)
+
+    return vini_ordinati
 
 
 class BaseScreen(Screen):
@@ -531,7 +724,7 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
         )
         scroll_content.bind(minimum_height=scroll_content.setter('height'))  # Auto-sizing del contenuto
 
-        # 2. Intestazione
+        # 2. Intestazione (Produttore / Annata / Alcol)
         scroll_content.add_widget(Label(
             text=f"{self.wine_data.get('produttore_rosso', 'Produttore N/D')}   {self.wine_data.get('annata_rosso', 'Annata N/D')}"
                  f"   {self.wine_data.get('alcol_rosso', 'Grad. Alcolica N/D')}° vol.",
@@ -547,7 +740,6 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
 
         # 3. Funzione per aggiungere una riga di dettaglio
         def add_detail_row_red(title, keys):
-            # Combina i valori usando il metodo helper
             colore_titolo_rosso = "#F27373FF"   # Rosso Fragola
             colore_valori_rosso = "#E63333FF"   # Rosso Scuro/Vino
             values = [self.format_data_for_label_red(key) for key in keys]
@@ -557,19 +749,16 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
                     f"[color={colore_valori_rosso}][b]{valori_stringa}[/b][/color]"  # Seconda parte (Valori)
             )
 
-            # Usiamo Label dinamico (Dimensione fissa in X e altezza automatica in Y)
             label = Label(
                 text=detail_text,
                 markup=True, halign='left', valign='top',
                 size_hint_y=None,
-                height=dp(30),  # Altezza minima di default, per sicurezza.
-                text_size=(dp(260), None),  # Usa una larghezza FISSA (es. 260dp)
+                height=dp(30),
+                text_size=(dp(260), None),
                 font_name='materiale/comicbd.ttf',
                 font_size='13sp'
             )
-            # Usa una funzione lambda per impostare 'height' al solo valore Y di 'texture_size' (indice [1])
             label.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + dp(6)))
-            # Ho aggiunto dp(5) per un piccolo padding extra/margine
 
             scroll_content.add_widget(label)
 
@@ -577,7 +766,7 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
         add_detail_row_red("Vista (Limpidezza / Intensità / Colore):\n", ['limpidezza_rosso', 'intensita_vista_rosso', 'colore_rosso'])
 
         # 4b. Dettagli Olfatto
-        add_detail_row_red("Olfatto (Condizione / Intensità):\n", ['condizione_rosso', 'intensita_naso_rosso']),
+        add_detail_row_red("Olfatto (Condizione / Intensità):\n", ['condizione_rosso', 'intensita_naso_rosso'])
         add_detail_row_red("Profumi: ", ['profumo_rosso'])
 
         # 4c. Dettagli Palato
@@ -591,115 +780,108 @@ class RedWineCardItem(ButtonBehavior, GridLayout):
             orientation='horizontal',
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(40),  # Altezza fissa per i bottoni
+            height=dp(40),
             padding=dp(2)
         )
 
-        # Poiché i testi sono lunghi, usiamo un font molto piccolo (10sp)
         FONT = 'materiale/comicbd.ttf'
         COMPACT_FONT_SIZE = '10sp'
 
-        # A. Bottone Elimina Scheda
         btn_delete = RoundedButton(
             text='Elimina Scheda',
-            size_hint_x=0.35,  # 1/3 dello spazio
+            size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
+            background_color=(0.8, 0.1, 0.1, 1)
         )
-        # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
         button_box.add_widget(btn_delete)
 
-        # B. Bottone Modifica Scheda
         btn_edit = RoundedButton(
             text='Modifica Scheda',
             size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.1, 0.7, 0.1, 1)  # Verde
+            background_color=(0.1, 0.7, 0.1, 1)
         )
-        # Collega all'azione di avvio modifica e chiudi il popup
         button_box.add_widget(btn_edit)
 
-        # C. Bottone Chiudi/Annulla
         btn_close = RoundedButton(
             text="Chiudi",
             size_hint_x=0.30,
             font_name=FONT,
             font_size='12sp',
-            background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
+            background_color=(0.5, 0.5, 0.5, 1)
         )
-        # Collega l'azione di chiusura del popup
         button_box.add_widget(btn_close)
 
-        # 6. Contenitore finale del Popup (per Scrollview e Bottone)
+        # 6. Contenitore finale del Popup (verticale)
         final_content = BoxLayout(orientation='vertical', padding=dp(6), spacing=dp(4))
+
+        # --- INTESTAZIONE TITOLO PERSONALIZZATA CON DATA ---
+        nome_vino = self.wine_data.get('nome_rosso', 'Vino Sconosciuto')
+        data_raw = self.wine_data.get('data_modifica', '')
+        data_str = formatta_data(data_raw)
+        testo_data = f" [size=13sp][color=#888888]({data_str})[/color][/size]" if data_str else ""
+
+        header_label = Label(
+            text=f"[b]{nome_vino}[/b]{testo_data}",
+            markup=True,
+            font_name='materiale/comicbd.ttf',
+            font_size='18sp',
+            color=(0.9, 0.2, 0.2, 1),  # Rosso Scuro/Vino
+            halign='left',
+            valign='middle',
+            size_hint_y=None,
+            height=dp(30),
+            text_size=(dp(280), None)
+        )
+        final_content.add_widget(header_label)
 
         # 7. Aggiungi la ScrollView contenente tutti i dettagli
         scroll_view = ScrollView(size_hint_y=0.9, do_scroll_x=False)
-        scroll_view.add_widget(scroll_content)  # Aggiunge il contenuto di testo alla ScrollView
+        scroll_view.add_widget(scroll_content)
 
-        final_content.add_widget(scroll_view)  # Aggiunge la ScrollView al contenitore finale
-        final_content.add_widget(button_box)  # Aggiunge il contenitore dei bottoni
+        final_content.add_widget(scroll_view)
+        final_content.add_widget(button_box)
 
-        # 8. Creazione del Popup
-        # Recuperiamo il nome del vino
-        nome_vino = self.wine_data.get('nome_rosso', 'Vino Sconosciuto')
-
+        # 8. Creazione del Popup (Senza titolo nativo)
         popup = Popup(
-            title=nome_vino,
-            title_font='materiale/comicbd.ttf',
-            title_color=(0.9, 0.2, 0.2, 1),  # Rosso Scuro/Vino
-            title_size='18sp',
+            title='',
             separator_color=(0.6, 0, 0, 1),
-            content=final_content,  # Usa il contenitore finale
+            separator_height=dp(2),
+            content=final_content,
             size_hint=(0.95, 0.9),
             background_color=(1, 1, 1, 0.7)
         )
 
         # =======================================================================
-        # COLLEGAMENTO DELLE AZIONI (DOPO CHE 'popup' È STATO DEFINITO)
+        # COLLEGAMENTO DELLE AZIONI
         # =======================================================================
-
-        # A. Collega l'azione del bottone Elimina (Passando il riferimento al popup di dettaglio)
         btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'rosso', popup))
-
-        # B. Collega l'azione del bottone di Modifica (Passando il riferimento al popup di dettaglio)
         btn_edit.bind(on_release=lambda x: self.start_edit_flow(popup))
-
-        # C. Collega l'azione del bottone di chiusura al popup.dismiss
         btn_close.bind(on_release=popup.dismiss)
 
         popup.open()
 
-        # TROVA LO SCHERMO ARCHIVIO ATTUALE E SALVA IL RIFERIMENTO DEL POPUP
         sm = App.get_running_app().root
-        archive_screen = sm.get_screen(f'archivio_rosso')
-        archive_screen.detail_popup = popup  # <--- SALVA IL RIFERIMENTO QUI
+        archive_screen = sm.get_screen('archivio_rosso')
+        archive_screen.detail_popup = popup
+
     def format_data_for_label_red(self, key):
         """Recupera i dati, gestendo stringhe e liste (es. da selezione multipla)."""
         value = self.wine_data.get(key, 'N/D')
 
         if isinstance(value, list):
-            # Se è una lista, unisci gli elementi con una virgola
             return ", ".join(value)
-        # Se è una stringa o altro, restituisci il valore così com'è
         return str(value)
 
     def start_edit_flow(self, popup_instance):
         """Chiude il popup e avvia il flusso di modifica, chiamando il metodo nell'App."""
-
-        # Chiude il popup per mostrare la schermata di modifica
         if popup_instance:
             popup_instance.dismiss()
 
         app = App.get_running_app()
-        # Il colore del vino è implicito dalla schermata di archivio
         wine_color = 'rosso'
-
-        # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
-        # L'ID UNIVOCO della scheda da aggiornare.
-        # Devi ASSICURARTI che il metodo start_edit_card nella tua WineApp accetti 3 argomenti.
         app.start_edit_card(wine_color, self.wine_data, self.card_doc_id)
 
 class WhiteWineCardItem(ButtonBehavior, GridLayout):
@@ -728,23 +910,22 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
         )
         scroll_content.bind(minimum_height=scroll_content.setter('height'))  # Auto-sizing del contenuto
 
-        # 2. Intestazione
+        # 2. Intestazione (Produttore / Annata / Alcol)
         scroll_content.add_widget(Label(
             text=f"{self.wine_data.get('produttore_bianco', 'Produttore N/D')}   {self.wine_data.get('annata_bianco', 'Annata N/D')}"
                  f"   {self.wine_data.get('alcol_bianco', 'Grad. Alcolica N/D')}° vol.",
-            markup=True, halign='left',  # Allinea a sinistra
-            valign='middle',  # centra verticalmente
+            markup=True, halign='left',
+            valign='middle',
             size_hint_y=None,
             height=dp(35),
-            color=(0.7, 0.5, 0.0, 1.0),  # Giallo-oro--ocra-scuro
+            color=(0.85, 0.75, 0.2, 1),  # Colore tema per il vino bianco (Giallo/Dorato)
             font_size='16sp',
             font_name='materiale/comicbd.ttf',
-            text_size=(dp(270), None)  # dimensione massima del testo affinché l'allineamento funzioni
+            text_size=(dp(270), None)
         ))
 
         # 3. Funzione per aggiungere una riga di dettaglio
         def add_detail_row_white(title, keys):
-            # Combina i valori usando il metodo helper
             colore_titolo_bianco = "#E6B31AFF"  # Giallo-oro luminoso
             colore_valori_bianco = "#B38000FF"  # Giallo-oro--ocra-scuro
             values = [self.format_data_for_label_white(key) for key in keys]
@@ -754,19 +935,16 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
                     f"[color={colore_valori_bianco}][b]{valori_stringa}[/b][/color]"  # Seconda parte (Valori)
             )
 
-            # Usiamo Label dinamico (Dimensione fissa in X e altezza automatica in Y)
             label = Label(
                 text=detail_text,
                 markup=True, halign='left', valign='top',
                 size_hint_y=None,
-                height=dp(30),  # Altezza minima di default, per sicurezza.
-                text_size=(dp(260), None),  # Usa una larghezza FISSA (es. 260dp)
+                height=dp(30),
+                text_size=(dp(260), None),
                 font_name='materiale/comicbd.ttf',
                 font_size='13sp'
             )
-            # Usa una funzione lambda per impostare 'height' al solo valore Y di 'texture_size' (indice [1])
             label.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + dp(6)))
-            # Ho aggiunto dp(5) per un piccolo padding extra/margine
 
             scroll_content.add_widget(label)
 
@@ -774,7 +952,7 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
         add_detail_row_white("Vista (Limpidezza / Intensità / Colore):\n", ['limpidezza_bianco', 'intensita_vista_bianco', 'colore_bianco'])
 
         # 4b. Dettagli Olfatto
-        add_detail_row_white("Olfatto (Condizione / Intensità):\n", ['condizione_bianco', 'intensita_naso_bianco']),
+        add_detail_row_white("Olfatto (Condizione / Intensità):\n", ['condizione_bianco', 'intensita_naso_bianco'])
         add_detail_row_white("Profumi: ", ['profumo_bianco'])
 
         # 4c. Dettagli Palato
@@ -783,125 +961,118 @@ class WhiteWineCardItem(ButtonBehavior, GridLayout):
         add_detail_row_white("Sapori: ", ['sapore_bianco'])
         add_detail_row_white("Persistenza / Qualità:\n", ['persistenza_bianco', 'qualita_bianco'])
 
-        # 5. Contenitore dei bottoni (sotto i dettagli)
+        # 5. Contenitore dei bottoni
         button_box = BoxLayout(
             orientation='horizontal',
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(40),  # Altezza fissa per i bottoni
+            height=dp(40),
             padding=dp(2)
         )
 
-        # Poiché i testi sono lunghi, usiamo un font molto piccolo (10sp)
         FONT = 'materiale/comicbd.ttf'
         COMPACT_FONT_SIZE = '10sp'
 
-        # A. Bottone Elimina Scheda
         btn_delete = RoundedButton(
             text='Elimina Scheda',
-            size_hint_x=0.35,  # 1/3 dello spazio
+            size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
+            background_color=(0.8, 0.1, 0.1, 1)
         )
-        # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
         button_box.add_widget(btn_delete)
 
-        # B. Bottone Modifica Scheda
         btn_edit = RoundedButton(
             text='Modifica Scheda',
             size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.1, 0.7, 0.1, 1)  # Verde
+            background_color=(0.1, 0.7, 0.1, 1)
         )
-        # Collega all'azione di avvio modifica e chiudi il popup
         button_box.add_widget(btn_edit)
 
-        # C. Bottone Chiudi/Annulla
         btn_close = RoundedButton(
             text="Chiudi",
             size_hint_x=0.30,
             font_name=FONT,
             font_size='12sp',
-            background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
+            background_color=(0.5, 0.5, 0.5, 1)
         )
-        # Collega l'azione di chiusura del popup
         button_box.add_widget(btn_close)
 
-        # 6. Contenitore finale del Popup (per Scrollview e Bottone)
+        # 6. Contenitore finale del Popup
         final_content = BoxLayout(orientation='vertical', padding=dp(6), spacing=dp(4))
 
-        # 7. Aggiungi la ScrollView contenente tutti i dettagli
-        scroll_view = ScrollView(size_hint_y=0.9, do_scroll_x=False)
-        scroll_view.add_widget(scroll_content)  # Aggiunge il contenuto di testo alla ScrollView
+        # --- INTESTAZIONE TITOLO PERSONALIZZATA CON DATA ---
+        nome_vino = self.wine_data.get('nome_bianco', 'Vino Sconosciuto')
+        data_raw = self.wine_data.get('data_modifica', '')
+        data_str = formatta_data(data_raw)
+        testo_data = f" [size=13sp][color=#888888]({data_str})[/color][/size]" if data_str else ""
 
-        final_content.add_widget(scroll_view)  # Aggiunge la ScrollView al contenitore finale
-        final_content.add_widget(button_box)  # Aggiunge il contenitore dei bottoni
+        header_label = Label(
+            text=f"[b]{nome_vino}[/b]{testo_data}",
+            markup=True,
+            font_name='materiale/comicbd.ttf',
+            font_size='18sp',
+            color=(0.85, 0.75, 0.2, 1),  # Colore tema per il vino bianco (Giallo/Dorato)
+            halign='left',
+            valign='middle',
+            size_hint_y=None,
+            height=dp(30),
+            text_size=(dp(280), None)
+        )
+        final_content.add_widget(header_label)
+
+        # 7. Aggiungi la ScrollView contenente i dettagli
+        scroll_view = ScrollView(size_hint_y=0.9, do_scroll_x=False)
+        scroll_view.add_widget(scroll_content)
+
+        final_content.add_widget(scroll_view)
+        final_content.add_widget(button_box)
 
         # 8. Creazione del Popup
-        # Recuperiamo il nome del vino
-        nome_vino = self.wine_data.get('nome_bianco', 'Vino Sconosciuto')
-
         popup = Popup(
-            title=nome_vino,
-            title_font='materiale/comicbd.ttf',
-            title_color=(0.7, 0.5, 0.0, 1.0),  # Giallo-oro--ocra-scuro
-            title_size='18sp',
-            separator_color=(0.65, 0.45, 0.0, 1.0),  # Marrone Ruggine Scuro
-            content=final_content,  # Usa il contenitore finale
+            title='',
+            separator_color=(0.8, 0.7, 0.1, 1),
+            separator_height=dp(2),
+            content=final_content,
             size_hint=(0.95, 0.9),
             background_color=(1, 1, 1, 0.7)
         )
 
         # =======================================================================
-        # COLLEGAMENTO DELLE AZIONI (DOPO CHE 'popup' È STATO DEFINITO)
+        # COLLEGAMENTO DELLE AZIONI
         # =======================================================================
-
-        # A. Collega l'azione del bottone Elimina (Passando il riferimento al popup di dettaglio)
         btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'bianco', popup))
-
-        # B. Collega l'azione del bottone di Modifica (Passando il riferimento al popup di dettaglio)
         btn_edit.bind(on_release=lambda x: self.start_edit_flow(popup))
-
-        # C. Collega l'azione del bottone di chiusura al popup.dismiss
         btn_close.bind(on_release=popup.dismiss)
 
         popup.open()
 
-        # TROVA LO SCHERMO ARCHIVIO ATTUALE E SALVA IL RIFERIMENTO DEL POPUP
         sm = App.get_running_app().root
-        archive_screen = sm.get_screen(f'archivio_bianco')
-        archive_screen.detail_popup = popup  # <--- SALVA IL RIFERIMENTO QUI
+        archive_screen = sm.get_screen('archivio_bianco')
+        archive_screen.detail_popup = popup
+
     def format_data_for_label_white(self, key):
         """Recupera i dati, gestendo stringhe e liste (es. da selezione multipla)."""
         value = self.wine_data.get(key, 'N/D')
 
         if isinstance(value, list):
-            # Se è una lista, unisci gli elementi con una virgola
             return ", ".join(value)
-        # Se è una stringa o altro, restituisci il valore così com'è
         return str(value)
 
     def start_edit_flow(self, popup_instance):
         """Chiude il popup e avvia il flusso di modifica, chiamando il metodo nell'App."""
-
-        # Chiude il popup per mostrare la schermata di modifica
         if popup_instance:
             popup_instance.dismiss()
 
         app = App.get_running_app()
-        # Il colore del vino è implicito dalla schermata di archivio (es. 'bianco')
         wine_color = 'bianco'
-
-        # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
-        # L'ID UNIVOCO della scheda da aggiornare.
-        # Devi ASSICURARTI che il metodo start_edit_card nella tua WineApp accetti 3 argomenti.
         app.start_edit_card(wine_color, self.wine_data, self.card_doc_id)
 
 class PinkWineCardItem(ButtonBehavior, GridLayout):
     """
-    Scheda per visualizzare i dati di un singolo vino.
+    Scheda per visualizzare i dati di un singolo vino rosato.
     Definiamo la proprietà wine_data che riceverà il dizionario da TinyDB.
     """
     # --- COSTANTI DI TEMA ---
@@ -930,287 +1101,322 @@ class PinkWineCardItem(ButtonBehavior, GridLayout):
         )
         scroll_content.bind(minimum_height=scroll_content.setter('height'))  # Auto-sizing del contenuto
 
-        # 2. Intestazione
+        # 2. Intestazione (Produttore / Annata / Alcol)
         scroll_content.add_widget(Label(
             text=f"{self.wine_data.get('produttore_rosato', 'Produttore N/D')}   {self.wine_data.get('annata_rosato', 'Annata N/D')}"
                  f"   {self.wine_data.get('alcol_rosato', 'Grad. Alcolica N/D')}° vol.",
-            markup=True, halign='left',  # Allinea a sinistra
-            valign='middle',  # centra verticalmente
+            markup=True, halign='left',
+            valign='middle',
             size_hint_y=None,
             height=dp(35),
             color=self.COLORE_INTESTAZIONE_ROSATO,
             font_size='16sp',
             font_name='materiale/comicbd.ttf',
-            text_size=(dp(270), None)  # dimensione massima del testo affinché l'allineamento funzioni
+            text_size=(dp(270), None)
         ))
 
         # 3. Funzione per aggiungere una riga di dettaglio
         def add_detail_row_pink(title, keys):
-            # Combina i valori usando il metodo helper
             values = [self.format_data_for_label_pink(key) for key in keys]
             valori_stringa = " / ".join(values)
             detail_text = (
-                    f"[color={self.COLORE_TITOLO_DETTAGLIO}]{title}[/color]" +  # Prima parte (Titolo)
-                    f"[color={self.COLORE_VALORI_DETTAGLIO}][b]{valori_stringa}[/b][/color]"  # Seconda parte (Valori)
+                    f"[color={self.COLORE_TITOLO_DETTAGLIO}]{title}[/color]" +
+                    f"[color={self.COLORE_VALORI_DETTAGLIO}][b]{valori_stringa}[/b][/color]"
             )
 
-            # Usiamo Label dinamico (Dimensione fissa in X e altezza automatica in Y)
             label = Label(
                 text=detail_text,
                 markup=True, halign='left', valign='top',
                 size_hint_y=None,
-                height=dp(30),  # Altezza minima di default, per sicurezza.
-                text_size=(dp(260), None),  # Usa una larghezza FISSA (es. 260dp)
+                height=dp(30),
+                text_size=(dp(260), None),
                 font_name='materiale/comicbd.ttf',
                 font_size='13sp'
             )
-            # Usa una funzione lambda per impostare 'height' al solo valore Y di 'texture_size' (indice [1])
             label.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + dp(6)))
-            # Ho aggiunto dp(5) per un piccolo padding extra/margine
-
             scroll_content.add_widget(label)
 
         # 4a. Dettagli Vista
-        add_detail_row_pink("Vista (Limpidezza / Intensità / Colore):\n", ['limpidezza_rosato', 'intensita_vista_rosato', 'colore_rosato'])
+        add_detail_row_pink("Vista (Limpidezza / Intensità / Colore):\n",
+                            ['limpidezza_rosato', 'intensita_vista_rosato', 'colore_rosato'])
 
         # 4b. Dettagli Olfatto
-        add_detail_row_pink("Olfatto (Condizione / Intensità):\n", ['condizione_rosato', 'intensita_naso_rosato']),
+        add_detail_row_pink("Olfatto (Condizione / Intensità):\n", ['condizione_rosato', 'intensita_naso_rosato'])
         add_detail_row_pink("Profumi: ", ['profumo_rosato'])
 
         # 4c. Dettagli Palato
         add_detail_row_pink("Palato: ", ['dolcezza_rosato'])
-        add_detail_row_pink("Corpo / Acidità / Tannini / Alcol:\n", ['corpo_rosato', 'acidita_rosato', 'tannicita_rosato', 'livello_alcolico_rosato'])
+        add_detail_row_pink("Corpo / Acidità / Tannini / Alcol:\n",
+                            ['corpo_rosato', 'acidita_rosato', 'tannicita_rosato', 'livello_alcolico_rosato'])
         add_detail_row_pink("Sapori: ", ['sapore_rosato'])
         add_detail_row_pink("Persistenza / Qualità:\n", ['persistenza_rosato', 'qualita_rosato'])
 
-        # 5. Contenitore dei bottoni (sotto i dettagli)
+        # 5. Contenitore dei bottoni
         button_box = BoxLayout(
             orientation='horizontal',
             spacing=dp(10),
             size_hint_y=None,
-            height=dp(40),  # Altezza fissa per i bottoni
+            height=dp(40),
             padding=dp(2)
         )
 
-        # Poiché i testi sono lunghi, usiamo un font molto piccolo (10sp)
         FONT = 'materiale/comicbd.ttf'
         COMPACT_FONT_SIZE = '10sp'
 
-        # A. Bottone Elimina Scheda
         btn_delete = RoundedButton(
             text='Elimina Scheda',
-            size_hint_x=0.35,  # 1/3 dello spazio
+            size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.8, 0.1, 0.1, 1)  # Rosso per l'azione distruttiva
+            background_color=(0.8, 0.1, 0.1, 1)
         )
-        # Collega all'App: chiama la funzione di conferma, passando l'ID e il colore
         button_box.add_widget(btn_delete)
 
-        # B. Bottone Modifica Scheda
         btn_edit = RoundedButton(
             text='Modifica Scheda',
             size_hint_x=0.35,
             font_name=FONT,
             font_size=COMPACT_FONT_SIZE,
-            background_color=(0.1, 0.7, 0.1, 1)  # Verde
+            background_color=(0.1, 0.7, 0.1, 1)
         )
-        # Collega all'azione di avvio modifica e chiudi il popup
         button_box.add_widget(btn_edit)
 
-        # C. Bottone Chiudi/Annulla
         btn_close = RoundedButton(
             text="Chiudi",
             size_hint_x=0.30,
             font_name=FONT,
             font_size='12sp',
-            background_color=(0.5, 0.5, 0.5, 1)  # Grigio neutro
+            background_color=(0.5, 0.5, 0.5, 1)
         )
-        # Collega l'azione di chiusura del popup
         button_box.add_widget(btn_close)
 
-        # 6. Contenitore finale del Popup (per Scrollview e Bottone)
+        # 6. Contenitore finale del Popup
         final_content = BoxLayout(orientation='vertical', padding=dp(6), spacing=dp(4))
 
-        # 7. Aggiungi la ScrollView contenente tutti i dettagli
-        scroll_view = ScrollView(size_hint_y=0.9, do_scroll_x=False)
-        scroll_view.add_widget(scroll_content)  # Aggiunge il contenuto di testo alla ScrollView
+        # --- INTESTAZIONE TITOLO PERSONALIZZATA CON DATA ---
+        nome_vino = self.wine_data.get('nome_rosato', 'Vino Sconosciuto')
+        data_raw = self.wine_data.get('data_modifica', '')
+        data_str = formatta_data(data_raw)
+        testo_data = f" [size=13sp][color=#888888]({data_str})[/color][/size]" if data_str else ""
 
-        final_content.add_widget(scroll_view)  # Aggiunge la ScrollView al contenitore finale
-        final_content.add_widget(button_box)  # Aggiunge il contenitore dei bottoni
+        header_label = Label(
+            text=f"[b]{nome_vino}[/b]{testo_data}",
+            markup=True,
+            font_name='materiale/comicbd.ttf',
+            font_size='18sp',
+            color=(0.9, 0.4, 0.5, 1),  # Colore rosato
+            halign='left',
+            valign='middle',
+            size_hint_y=None,
+            height=dp(30),
+            text_size=(dp(280), None)
+        )
+        final_content.add_widget(header_label)
+
+        # 7. Aggiungi la ScrollView contenente i dettagli
+        scroll_view = ScrollView(size_hint_y=0.9, do_scroll_x=False)
+        scroll_view.add_widget(scroll_content)
+
+        final_content.add_widget(scroll_view)
+        final_content.add_widget(button_box)
 
         # 8. Creazione del Popup
-        # Recuperiamo il nome del vino
-        nome_vino = self.wine_data.get('nome_rosato', 'Vino Sconosciuto')
-
         popup = Popup(
-            title=nome_vino,
-            title_font='materiale/comicbd.ttf',
-            title_color=self.COLORE_INTESTAZIONE_ROSATO,  # malva scuro
-            content=final_content,  # Usa il contenitore finale
+            title='',
+            separator_color=(0.85, 0.35, 0.45, 1),  # Colore separatore rosato
+            separator_height=dp(2),
+            content=final_content,
             size_hint=(0.95, 0.9),
-            separator_color=(0.63, 0.40, 0.54, 1.0),  # Malva Scuro/Melanzana Pallida
             background_color=(1, 1, 1, 0.7)
         )
 
         # =======================================================================
-        # COLLEGAMENTO DELLE AZIONI (DOPO CHE 'popup' È STATO DEFINITO)
+        # COLLEGAMENTO DELLE AZIONI
         # =======================================================================
-
-        # A. Collega l'azione del bottone Elimina (Passando il riferimento al popup di dettaglio)
         btn_delete.bind(on_release=lambda instance: app.confirm_delete_card(self.card_doc_id, 'rosato', popup))
-
-        # B. Collega l'azione del bottone di Modifica (Passando il riferimento al popup di dettaglio)
         btn_edit.bind(on_release=lambda x: self.start_edit_flow(popup))
-
-        # C. Collega l'azione del bottone di chiusura al popup.dismiss
         btn_close.bind(on_release=popup.dismiss)
 
         popup.open()
 
-        # TROVA LO SCHERMO ARCHIVIO ATTUALE E SALVA IL RIFERIMENTO DEL POPUP
         sm = App.get_running_app().root
-        archive_screen = sm.get_screen(f'archivio_rosato')
-        archive_screen.detail_popup = popup  # <--- SALVA IL RIFERIMENTO QUI
+        archive_screen = sm.get_screen('archivio_rosato')
+        archive_screen.detail_popup = popup
 
     def format_data_for_label_pink(self, key):
         """Recupera i dati, gestendo stringhe e liste (es. da selezione multipla)."""
         value = self.wine_data.get(key, 'N/D')
 
         if isinstance(value, list):
-            # Se è una lista, unisci gli elementi con una virgola
             return ", ".join(value)
-        # Se è una stringa o altro, restituisci il valore così com'è
         return str(value)
 
     def start_edit_flow(self, popup_instance):
         """Chiude il popup e avvia il flusso di modifica, chiamando il metodo nell'App."""
 
-        # Chiude il popup per mostrare la schermata di modifica
         if popup_instance:
             popup_instance.dismiss()
 
         app = App.get_running_app()
-        # Il colore del vino è implicito dalla schermata di archivio (es. 'rosso')
         wine_color = 'rosato'
-
-        # Chiama il metodo definito nel Punto B (start_edit_card) passando i dati, il colore e
-        # L'ID UNIVOCO della scheda da aggiornare.
-        # Devi ASSICURARTI che il metodo start_edit_card nella tua WineApp accetti 3 argomenti.
         app.start_edit_card(wine_color, self.wine_data, self.card_doc_id)
 
-
 class RedArchiveScreen(Screen):
-    """Schermata della visualizzazione dell' 'archivio' dei vini rossi."""
+    is_crescente = BooleanProperty(False)
+
+    def toggle_ordine_direzione(self):
+        self.is_crescente = not self.is_crescente
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
 
     def on_enter(self):
-        # Chiamato quando la schermata diventa attiva.
-        self.load_archive_data()
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
 
-    def load_archive_data(self):
-        # Carica i dati dal database e popola il GridLayout.
-        app_red = App.get_running_app()
-        db_red = app_red.db_red  # Riferimento al TinyDB dei vini rossi
+    def load_archive_data(self, criterio="Inserimento"):
+        # Assegnazione fondamentale della variabile 'app'
+        app = App.get_running_app()
+        db_red = app.db_red
 
-        # Svuota il contenitore prima di ricaricare (utile per i cambiamenti di schermo)
+        # Salva l'ultimo criterio/verso selezionato nell'istanza dell'app per l'export PDF
+        app.ultimo_criterio_ord = criterio
+        app.ultimo_verso_crescente = self.is_crescente
+
         container = self.ids.archive_container
         container.clear_widgets()
 
-        # Legge tutti i documenti dal database
-        all_wines = db_red.all()
+        try:
+            raw_wines = db_red.all()
+        except Exception as e:
+            print(f"Errore nella lettura del database rossi: {e}")
+            raw_wines = []
 
-        if not all_wines:
+        if not raw_wines:
             container.add_widget(Label(text="Nessun vino rosso archiviato.",
                                        size_hint_y=None, height=40,
                                        color=(0.1, 0.1, 0.1, 1)))
             return
 
-        # Passa l'indice della riga (i)
-        for i, wine_document in enumerate(all_wines):
-            # 1. Converti il Documento TinyDB in un normale dizionario
+        all_wines = []
+        for wine_document in raw_wines:
             wine_data = dict(wine_document)
-
-            # 2. AGGIUNGI l'ID del documento (doc_id) al dizionario dei dati.
-            # Questo ID è cruciale per la funzione UPDATE.
             wine_data['_id'] = wine_document.doc_id
+            wine_data['doc_id'] = wine_document.doc_id
+            all_wines.append(wine_data)
 
-            # 3. Crea e aggiungi il widget della scheda
-            card = RedWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_document.doc_id)
+        vini_ordinati = ordina_lista_vini(all_wines, criterio=criterio, tipo_vino="rosso", crescente=self.is_crescente)
+
+        for i, wine_data in enumerate(vini_ordinati):
+            card = RedWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_data['doc_id'])
             container.add_widget(card)
-
 
 class WhiteArchiveScreen(Screen):
     """Schermata della visualizzazione dell' 'archivio' dei vini bianchi."""
 
+    is_crescente = BooleanProperty(False)
+
+    def toggle_ordine_direzione(self):
+        self.is_crescente = not self.is_crescente
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
+
     def on_enter(self):
-        # Chiamato quando la schermata diventa attiva.
-        self.load_archive_data()
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
 
-    def load_archive_data(self):
-        # Carica i dati dal database e popola il GridLayout.
-        app_white = App.get_running_app()
-        db_white = app_white.db_white  # Riferimento al TinyDB dei vini bianchi
+    def load_archive_data(self, criterio="Inserimento"):
+        app = App.get_running_app()
+        db_white = app.db_white
 
-        # Svuota il contenitore prima di ricaricare (utile per i cambiamenti di schermo)
+        # Salva l'ultimo stato nell'app
+        app.ultimo_criterio_ord = criterio
+        app.ultimo_verso_crescente = self.is_crescente
+
         container = self.ids.archive_container
         container.clear_widgets()
 
-        # Legge tutti i documenti dal database
-        all_wines = db_white.all()
+        try:
+            raw_wines = db_white.all()
+        except Exception as e:
+            print(f"Errore nella lettura del database bianchi: {e}")
+            raw_wines = []
 
-        if not all_wines:
+        if not raw_wines:
             container.add_widget(Label(text="Nessun vino bianco archiviato.",
                                        size_hint_y=None, height=40,
                                        color=(0.1, 0.1, 0.1, 1)))
             return
 
-        # Passa l'indice della riga (i)
-        for i, wine_document in enumerate(all_wines):
-            # 1. Converti il Documento TinyDB in un normale dizionario
+        all_wines = []
+        for wine_document in raw_wines:
             wine_data = dict(wine_document)
-            # 2. AGGIUNGI l'ID del documento (doc_id) al dizionario dei dati.
-            # Questo ID è cruciale per la funzione UPDATE.
             wine_data['_id'] = wine_document.doc_id
-            # 3. Crea e aggiungi il widget della scheda
-            card = WhiteWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_document.doc_id)
+            wine_data['doc_id'] = wine_document.doc_id
+            all_wines.append(wine_data)
+
+        # Applica l'ordinamento dinamico
+        vini_ordinati = ordina_lista_vini(all_wines, criterio=criterio, tipo_vino="bianco", crescente=self.is_crescente)
+
+        for i, wine_data in enumerate(vini_ordinati):
+            card = WhiteWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_data['doc_id'])
             container.add_widget(card)
+
 
 class PinkArchiveScreen(Screen):
     """Schermata della visualizzazione dell' 'archivio' dei vini rosati."""
 
+    is_crescente = BooleanProperty(False)
+
+    def toggle_ordine_direzione(self):
+        self.is_crescente = not self.is_crescente
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
+
     def on_enter(self):
-        # Chiamato quando la schermata diventa attiva.
-        self.load_archive_data()
+        criterio = getattr(self.ids, 'spinner_ordinamento', None)
+        criterio_testo = criterio.text if criterio else "Inserimento"
+        self.load_archive_data(criterio=criterio_testo)
 
-    def load_archive_data(self):
-        # Carica i dati dal database e popola il GridLayout.
-        app_pink = App.get_running_app()
-        db_pink = app_pink.db_pink  # Riferimento al TinyDB dei vini rosati
+    def load_archive_data(self, criterio="Inserimento"):
+        app = App.get_running_app()
+        db_pink = app.db_pink
 
-        # Svuota il contenitore prima di ricaricare (utile per i cambiamenti di schermo)
+        # Salva l'ultimo stato nell'app
+        app.ultimo_criterio_ord = criterio
+        app.ultimo_verso_crescente = self.is_crescente
+
         container = self.ids.archive_container
         container.clear_widgets()
 
-        # Legge tutti i documenti dal database
-        all_wines = db_pink.all()
+        try:
+            raw_wines = db_pink.all()
+        except Exception as e:
+            print(f"Errore nella lettura del database rosati: {e}")
+            raw_wines = []
 
-        if not all_wines:
+        if not raw_wines:
             container.add_widget(Label(text="Nessun vino rosato archiviato.",
                                        size_hint_y=None, height=40,
                                        color=(0.1, 0.1, 0.1, 1)))
             return
 
-        # Passa l'indice della riga (i)
-        for i, wine_document in enumerate(all_wines):
-            # 1. Converti il Documento TinyDB in un normale dizionario
+        all_wines = []
+        for wine_document in raw_wines:
             wine_data = dict(wine_document)
-
-            # 2. AGGIUNGI l'ID del documento (doc_id) al dizionario dei dati.
-            # Questo ID è cruciale per la funzione UPDATE.
             wine_data['_id'] = wine_document.doc_id
+            wine_data['doc_id'] = wine_document.doc_id
+            all_wines.append(wine_data)
 
-            # 3. Crea e aggiungi il widget della scheda
-            card = PinkWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_document.doc_id)
+        # Applica l'ordinamento dinamico
+        vini_ordinati = ordina_lista_vini(all_wines, criterio=criterio, tipo_vino="rosato", crescente=self.is_crescente)
+
+        for i, wine_data in enumerate(vini_ordinati):
+            card = PinkWineCardItem(wine_data=wine_data, row_index=i, card_doc_id=wine_data['doc_id'])
             container.add_widget(card)
 
 # ==============================================================================
@@ -1219,6 +1425,9 @@ class PinkArchiveScreen(Screen):
 
 
 class WineApp(App):
+    # Rende la funzione globale accessibile nei file KV tramite app.formatta_data
+    formatta_data = staticmethod(formatta_data)
+
     # Proprietà per lo sfondo. Non usata in questo setup, ma utile per il futuro.
     sfondo_principale = StringProperty("materiale/iniziale.png")
 
@@ -1238,6 +1447,10 @@ class WineApp(App):
     # Definisce il colore deselezionato per il reset dei bottoni,
     # ereditato da BaseScreen
     COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
+
+    # Memorizza l'ultimo criterio e verso selezionati dall'utente
+    ultimo_criterio_ord = StringProperty("Inserimento")
+    ultimo_verso_crescente = BooleanProperty(False)
 
     def build(self):
 
@@ -1454,68 +1667,39 @@ class WineApp(App):
             db = self.db_white
             archive_screen_name = 'archivio_bianco'
         else:
-            # Assumendo che 'pink' o 'rosato' sia il caso rimanente
             db = self.db_pink
-            archive_screen_name = 'archivio_rosato'  # O 'archivio_rosato', a seconda del KV
+            archive_screen_name = 'archivio_rosato'
 
-        # Combina le selezioni dei bottoni (selections) con i dati di testo (text_inputs)
+        # Combina le selezioni dei bottoni con i dati di testo
         wine_card_ordered = self.selections.copy()
 
-        # 2. Campi della SCHEDA INFO (Priorità)
+        # 2. Campi della SCHEDA INFO
         wine_card_ordered['nome_' + wine_color] = info_screen.ids['nome_' + wine_color].text
         wine_card_ordered['produttore_' + wine_color] = info_screen.ids['produttore_' + wine_color].text
         wine_card_ordered['annata_' + wine_color] = info_screen.ids['annata_' + wine_color].text
-        # Qui è meglio salvare la stringa attuale dello spinner, anche se è il placeholder
         wine_card_ordered['alcol_' + wine_color] = info_screen.ids['alcol_' + wine_color].text
-        # AGGIUNGI QUI IL CAMPO NOTE PERSONALI SE ESISTE:
-        # wine_card_ordered['note_personali'] = info_screen.ids['note_' + wine_color].text
 
-        # 3. I campi delle ALTRE SCHEDE (limpidezza, acidità, ecc.) sono GIA' in wine_card_ordered
-        # grazie a self.selections.copy() all'inizio.
+        # 🕒 ASSEGNAZIONE DATA MODIFICA/CREAZIONE
+        wine_card_ordered['data_modifica'] = datetime.now().isoformat()
 
-        # Verifichiamo l'esistenza di tutti i campi essenziali, altrimenti usiamo ''
-
-        # Esempio: assicurarsi che 'profumo' sia una stringa (TinyDB preferisce non avere liste vuote)
+        # Gestione speciale del campo profumo
         profumo_value = wine_card_ordered.get('profumo_' + wine_color, [])
         if isinstance(profumo_value, list):
             wine_card_ordered['profumo_' + wine_color] = ', '.join(profumo_value)
-        # Nota: Assicurati che le chiavi 'limpidezza_rosso', 'acidita_bianco', ecc. siano gestite correttamente
-        # quando si popolano le selezioni (tramite il metodo BaseScreen.on_button_press).
 
-        # =========================================================================
         # 4. LOGICA AGGIORNAMENTO / INSERIMENTO
-        # =========================================================================
         if self.card_to_update_id is not None:
-            # --- MODALITÀ DI AGGIORNAMENTO (UPDATE) ---
             doc_id = self.card_to_update_id
-
-            # Esegue l'aggiornamento nel DB utilizzando l'ID del documento
             db.update(wine_card_ordered, doc_ids=[doc_id])
-
-            print(f"Scheda ID {doc_id} aggiornata con successo per vino: {wine_color}")
-
-            # Resetta lo stato di modifica
+            print(f"Scheda ID {doc_id} aggiornata con successo per {wine_color} in data {wine_card_ordered['data_modifica']}")
             self.card_to_update_id = None
-
-            # Naviga verso l'archivio del vino appena modificato
             self.root.current = archive_screen_name
-
         else:
-            # --- MODALITÀ DI INSERIMENTO NUOVA SCHEDA (INSERT) ---
             db.insert(wine_card_ordered)
-
-            print("Scheda salvata con successo per vino:", wine_color)
-            print(json.dumps(wine_card_ordered, indent=4))
-
-            # Naviga verso la schermata di scelta vino 'selection' (logica originale)
+            print(f"Nuova scheda salvata con successo per {wine_color} in data {wine_card_ordered['data_modifica']}")
             self.root.current = 'selection'
 
-        # =========================================================================
-        # 5. RESET CAMPI (Eseguito sempre dopo insert o update)
-        # =========================================================================
-
-        # Esegui il reset completo (che include il reset di self.text_inputs, self.selections,
-        # self.card_to_update_id e i campi di testo sulla info_screen)
+        # 5. RESET CAMPI
         self.reset_all_data_entry_fields(wine_color)
 
 
@@ -1653,6 +1837,8 @@ class WineApp(App):
              lambda: self.navigate_to_archive('bianco')),
             ('materiale/menu_archivio_rosati.png', 'materiale/menu_archivio_rosati_cliccato.png',
              lambda: self.navigate_to_archive('rosato')),
+            ('materiale/Export_Import_button_testo_noBG.png', 'materiale/mExport_Import_button_testo_noBG_cliccato.png',
+             lambda btn_inst=None: self.show_export_import_submenu(btn_inst or menu_anchor_instance)),
             ('materiale/menu_vai_a_degustazione.png', 'materiale/menu_vai_a_degustazione_cliccato.png',
              lambda: self.cancel_edit_and_go_to_selection()),
             ('materiale/menu_esci.png', 'materiale/menu_esci_cliccato.png', self.stop)
@@ -1709,6 +1895,49 @@ class WineApp(App):
             self.root.current = archive_screen_name
         else:
             print(f"Errore: La schermata '{archive_screen_name}' non è definita nel ScreenManager.")
+
+    from kivy.uix.button import Button
+    from kivy.uix.dropdown import DropDown
+    from kivy.metrics import dp
+
+    def show_export_import_submenu(self, button_instance):
+        """Mostra unicamente le due frecce sovrapposte, azzerando sfondi e margini."""
+
+        if hasattr(self, 'current_dropdown') and self.current_dropdown:
+            self.current_dropdown.dismiss()
+
+        content_layout = BoxLayout(
+            orientation='vertical',
+            spacing=dp(4),
+            padding=[0, 0, 0, 0]
+        )
+
+        items = [
+            ('materiale/menu_esporta_round_testo_noBG.png', 'materiale/menu_esporta_cliccato_round_testo_noBG.png', lambda: self.esporta_dati()),
+            ('materiale/menu_importa_round_testo_noBG.png', 'materiale/menu_importa_cliccato_round_testo_noBG.png', lambda: self.mostra_menu_importa())
+        ]
+
+        for img_normal, img_down, action in items:
+            btn = ArrowButton(
+                img_normal=img_normal,
+                img_down=img_down,
+                action=action,
+                on_click_callback=lambda: view.dismiss()
+            )
+            content_layout.add_widget(btn)
+
+        # ModalView trasparente (background_color trasparente e senza bordo)
+        view = ModalView(
+            size_hint=(None, None),
+            size=(dp(70), dp(68)),
+            background='',
+            background_color=(0, 0, 0, 0),
+            auto_dismiss=True
+        )
+
+        view.add_widget(content_layout)
+        view.open()
+
 
     def start_edit_card(self, wine_color, wine_data, card_doc_id):
         """Prepara l'app per la modifica di una scheda esistente.
@@ -1918,6 +2147,652 @@ class WineApp(App):
         Window.size = (w, h)
         # Forza il ridisegno del canvas
         Window.canvas.ask_update()
+
+    def esporta_dati(self):
+        content = BoxLayout(
+            orientation='vertical',
+            spacing=dp(15),
+            padding=dp(15)
+        )
+
+        # Bottone Esporta DB (Verde chiaro)
+        btn_db = CustomOvalButton(
+            text="Esporta DB",
+            font_size='14sp',
+            bold=True,
+            color=(0.1, 0.1, 0.1, 1),        # Testo scuro per un contrasto migliore sul verde chiaro
+            bg_color=[0.45, 0.85, 0.55, 1],   # Verde Chiaro
+            border_color=[0.0, 0.7, 0.9, 1], # Bordo Ciano/Azzurro
+            size_hint=(None, None),
+            size=(dp(160), dp(48)),
+            pos_hint={'center_x': 0.5}
+        )
+
+        # Bottone Esporta PDF (Viola chiaro)
+        btn_pdf = CustomOvalButton(
+            text="Esporta PDF",
+            font_size='14sp',
+            bold=True,
+            color=(1, 1, 1, 1),              # Testo bianco
+            bg_color=[0.68, 0.48, 0.82, 1],  # Viola Chiaro
+            border_color=[0.0, 0.7, 0.9, 1], # Bordo Ciano/Azzurro
+            size_hint=(None, None),
+            size=(dp(160), dp(48)),
+            pos_hint={'center_x': 0.5}
+        )
+
+        view = ModalView(
+            size_hint=(None, None),
+            size=(dp(240), dp(160)),
+            auto_dismiss=True,
+            background='',
+            background_color=(0, 0, 0, 0),
+            overlay_color=(0, 0, 0, 0.2)
+        )
+
+        btn_db.bind(on_release=lambda instance: [view.dismiss(), self.esporta_file_db()])
+        btn_pdf.bind(on_release=lambda instance: [view.dismiss(), self.mostra_scelta_pdf()])
+
+        content.add_widget(btn_db)
+        content.add_widget(btn_pdf)
+
+        view.add_widget(content)
+        view.open()
+
+
+    def mostra_scelta_pdf(self):
+        """Apre un ModalView trasparente con pulsanti personalizzati in tonalità pastello."""
+        content = BoxLayout(
+            orientation='vertical',
+            spacing=dp(12),
+            padding=dp(15)
+        )
+
+        # Configurazione opzioni: (Testo, Categoria, Colore Sfondo RGBA, Colore Testo RGBA)
+        opzioni = [
+            ("Tutti gli archivi", "tutti", [0.72, 0.75, 0.80, 1], (0.15, 0.15, 0.15, 1)),
+            ("Solo Rossi", "rossi", [0.7, 0.45, 0.45, 1], (1, 1, 1, 1)),
+            ("Solo Rosati", "rosati", [0.9, 0.75, 0.75, 1], (0.2, 0.1, 0.1, 1)),
+            ("Solo Bianchi", "bianchi", [0.9, 0.85, 0.55, 1], (0.2, 0.2, 0.1, 1))
+        ]
+
+        view = ModalView(
+            size_hint=(None, None),
+            size=(dp(240), dp(260)),
+            auto_dismiss=True,
+            background='',  # Rimuove lo sfondo scuro predefinito
+            background_color=(0, 0, 0, 0),
+            overlay_color=(0, 0, 0, 0.2)  # Oscuramento leggero dello sfondo
+        )
+
+        for testo, cat, color_bg, color_text in opzioni:
+            btn = CustomOvalButton(
+                text=testo,
+                font_size='14sp',
+                bold=True,
+                color=color_text,
+                bg_color=color_bg,
+                border_color=[0.0, 0.7, 0.9, 1],  # Mantiene il bordo ciano/azzurro per continuità stilistica
+                size_hint=(None, None),
+                size=(dp(180), dp(44)),
+                pos_hint={'center_x': 0.5}
+            )
+            # Binding per chiudere il popup ed eseguire l'esportazione PDF selezionata
+            btn.bind(on_release=lambda instance, c=cat: [view.dismiss(), self.esporta_file_pdf(c)])
+            content.add_widget(btn)
+
+        view.add_widget(content)
+        view.open()
+
+    def esporta_file_db(self):
+        """Esporta un backup dei database dell'applicazione nella cartella di destinazione adatta (Download su Android, esportazioni su Desktop)."""
+        CARTELLA_DEST = get_export_folder()
+
+        files_db = [
+            "red_wine_database.json",
+            "pink_wine_database.json",
+            "white_wine_database.json",
+            "wine_database.db"
+        ]
+
+        copiati = 0
+        for f in files_db:
+            if os.path.exists(f):
+                shutil.copy(f, os.path.join(CARTELLA_DEST, f"backup_{f}"))
+                copiati += 1
+
+        print(f"Esportati {copiati} file di database nella cartella '{CARTELLA_DEST}'")
+
+    def carica_vini_da_file(self, nome_file):
+        """Cerca il file JSON nella cartella di progetto e carica i dati."""
+        percorsi_da_provare = [
+            nome_file,
+            os.path.join(os.path.dirname(__file__), nome_file),
+            os.path.join("data", nome_file),
+            os.path.join("database", nome_file)
+        ]
+
+        for percorso in percorsi_da_provare:
+            if os.path.exists(percorso):
+                try:
+                    with open(percorso, 'r', encoding='utf-8') as f:
+                        dati = json.load(f)
+                        print(f"DEBUG: Trovato {percorso} | Tipo dati: {type(dati)}")
+
+                        if isinstance(dati, list):
+                            return dati
+                        elif isinstance(dati, dict):
+                            # Se è un dizionario con chiavi o id
+                            for chiave in ['vini', 'wines', 'data', 'items']:
+                                if chiave in dati and isinstance(dati[chiave], list):
+                                    return dati[chiave]
+
+                            valori = list(dati.values())
+                            if valori and isinstance(valori[0], dict):
+                                return valori
+                            elif valori and isinstance(valori[0], list):
+                                lista_piatta = []
+                                for elem in valori:
+                                    if isinstance(elem, list):
+                                        lista_piatta.extend(elem)
+                                    elif isinstance(elem, dict):
+                                        lista_piatta.append(elem)
+                                return lista_piatta
+                except Exception as e:
+                    print(f"DEBUG: Errore lettura {percorso}: {e}")
+
+        print(f"DEBUG: File {nome_file} non trovato nei percorsi controllati.")
+        return []
+
+    def esporta_file_pdf(self, categoria="tutti"):
+        """Genera un PDF dettagliato dinamico nei colori in base alla tipologia di vino."""
+        CARTELLA_DEST = get_export_folder()
+        file_pdf = os.path.join(CARTELLA_DEST, f"degustazioni_{categoria}.pdf")
+
+        # Mappatura: Categoria -> (Nome Sezione, File DB, Colore Primario, Colore Etichette)
+        mppa_files = {
+            "rossi": ("Vini Rossi", "red_wine_database.json", "#722F37", "#8B0000"),
+            "bianchi": ("Vini Bianchi", "white_wine_database.json", "#8B7500", "#B8860B"),
+            "rosati": ("Vini Rosati", "pink_wine_database.json", "#C71585", "#DB7093")
+        }
+
+        try:
+            doc = SimpleDocTemplate(
+                file_pdf,
+                pagesize=letter,
+                rightMargin=36,
+                leftMargin=36,
+                topMargin=36,
+                bottomMargin=36
+            )
+            elements = []
+            styles = getSampleStyleSheet()
+
+            # Titolo Documento Principale
+            titolo_generale_colore = mppa_files.get(categoria, ("", "", "#722F37", ""))[2]
+            style_title = ParagraphStyle(
+                'DocTitle',
+                parent=styles['Title'],
+                fontName='Helvetica-Bold',
+                fontSize=22,
+                textColor=colors.HexColor(titolo_generale_colore),
+                spaceAfter=15
+            )
+
+            titoli = {
+                "tutti": "Catalogo Degustazione Completo",
+                "rossi": "Catalogo Degustazione - Vini Rossi",
+                "rosati": "Catalogo Degustazione - Vini Rosati",
+                "bianchi": "Catalogo Degustazione - Vini Bianchi"
+            }
+
+            elements.append(Paragraph(titoli.get(categoria, "Catalogo Degustazione Vini"), style_title))
+            elements.append(Spacer(1, 10))
+
+            def get_val(v, *chiavi):
+                """Estrae il primo valore disponibile provando diverse chiavi ed eventuali liste."""
+                for k in chiavi:
+                    val = v.get(k)
+                    if val is not None and val != "":
+                        if isinstance(val, list):
+                            return ", ".join(map(str, val))
+                        return str(val)
+                return "-"
+
+            categorie_da_elaborare = ["rossi", "bianchi", "rosati"] if categoria == "tutti" else [categoria]
+            vini_trovati_totali = 0
+
+            for idx_cat, cat_key in enumerate(categorie_da_elaborare):
+                if cat_key not in mppa_files:
+                    continue
+
+                titolo_cat, nome_file, hex_primario, hex_etichette = mppa_files[cat_key]
+                vini_grezzi = self.carica_vini_da_file(nome_file)
+
+                # Normalizzazione dati vini
+                vini_sezione = []
+                for item in vini_grezzi:
+                    if isinstance(item, dict):
+                        valori_dict = [v for v in item.values() if isinstance(v, dict)]
+                        if valori_dict and not any(k for k in item.keys() if 'nome' in k or 'produttore' in k):
+                            vini_sezione.extend(valori_dict)
+                        else:
+                            vini_sezione.append(item)
+
+                if not vini_sezione:
+                    continue
+
+                    # Recupera l'ultimo ordinamento impostato dall'utente nell'app
+                app = App.get_running_app()
+                criterio_pdf = getattr(app, 'ultimo_criterio_ord', 'Inserimento')
+                crescente_pdf = getattr(app, 'ultimo_verso_crescente', False)
+
+                # Mappatura semplice del tipo vino per l'helper
+                tipo_map = {"rossi": "rosso", "bianchi": "bianco", "rosati": "rosato"}
+                tipo_vino_str = tipo_map.get(cat_key, "rosso")
+
+                # Applica lo stesso ordinamento dell'archivio alla lista del PDF
+                vini_sezione = ordina_lista_vini(
+                    vini_sezione,
+                    criterio=criterio_pdf,
+                    tipo_vino=tipo_vino_str,
+                    crescente=crescente_pdf
+                )
+
+                vini_trovati_totali += len(vini_sezione)
+
+                # Salto pagina prima delle tipologie successive (nel PDF completo)
+                if categoria == "tutti" and idx_cat > 0 and len(elements) > 2:
+                    elements.append(PageBreak())
+
+                # Definizione Stili Dinamici per la Tipologia Corrente
+                style_category_header = ParagraphStyle(
+                    f'CatHeader_{cat_key}',
+                    fontName='Helvetica-Bold',
+                    fontSize=18,
+                    alignment=1,
+                    textColor=colors.HexColor(hex_primario),
+                    spaceBefore=10,
+                    spaceAfter=10
+                )
+
+                style_wine_title = ParagraphStyle(
+                    f'WineTitle_{cat_key}',
+                    fontName='Helvetica-Bold',
+                    fontSize=15,
+                    textColor=colors.HexColor(hex_primario),
+                    spaceAfter=4
+                )
+
+                style_wine_sub = ParagraphStyle(
+                    'WineSub',
+                    fontName='Helvetica-Oblique',
+                    fontSize=11,
+                    textColor=colors.HexColor("#4A4A4A"),
+                    spaceAfter=8
+                )
+
+                style_label = ParagraphStyle(
+                    f'FieldLabel_{cat_key}',
+                    fontName='Helvetica-Bold',
+                    fontSize=10,
+                    textColor=colors.HexColor(hex_etichette),
+                    spaceBefore=3,
+                    spaceAfter=1
+                )
+
+                style_value = ParagraphStyle(
+                    'FieldValue',
+                    fontName='Helvetica',
+                    fontSize=10,
+                    textColor=colors.black,
+                    spaceAfter=5
+                )
+
+                # Header Sezione Tipologia
+                elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor(hex_primario), spaceAfter=8,
+                                           spaceBefore=10))
+                elements.append(
+                    Paragraph(f"<b>--- {titolo_cat.upper()} ({len(vini_sezione)}) ---</b>", style_category_header))
+                elements.append(
+                    HRFlowable(width="100%", thickness=2, color=colors.HexColor(hex_primario), spaceAfter=15,
+                               spaceBefore=8))
+
+                # Schede dei singoli vini con colori abbinati
+                for i, v in enumerate(vini_sezione):
+                    if not isinstance(v, dict):
+                        continue
+
+                    nome = get_val(v, 'nome_rosso', 'nome_bianco', 'nome_rosato', 'nome', 'nome_vino', 'name')
+                    cantina = get_val(v, 'produttore_rosso', 'produttore_bianco', 'produttore_rosato', 'cantina',
+                                      'produttore', 'winery')
+                    anno = get_val(v, 'annata_rosso', 'annata_bianco', 'annata_rosato', 'anno', 'annata', 'year')
+                    alcol = get_val(v, 'alcol_rosso', 'alcol_bianco', 'alcol_rosato', 'grado', 'gradazione', 'alcol')
+
+                    # --- RECUPERO E FORMATTAZIONE DELLA DATA ---
+                    data_raw = v.get('data_modifica', '')
+                    data_str = formatta_data(data_raw)
+                    testo_data_pdf = f" &nbsp;|&nbsp; Data: <b>{data_str}</b>" if data_str else ""
+
+                    limpidezza = get_val(v, 'limpidezza_rosso', 'limpidezza_bianco', 'limpidezza_rosato', 'limpidezza')
+                    intensita_vista = get_val(v, 'intensita_vista_rosso', 'intensita_vista_bianco',
+                                              'intensita_vista_rosato', 'intensita_vista')
+                    colore = get_val(v, 'colore_rosso', 'colore_bianco', 'colore_rosato', 'colore')
+
+                    condizione = get_val(v, 'condizione_rosso', 'condizione_bianco', 'condizione_rosato', 'condizione')
+                    intensita_naso = get_val(v, 'intensita_naso_rosso', 'intensita_naso_bianco',
+                                             'intensita_naso_rosato', 'intensita_naso')
+                    profumi = get_val(v, 'profumo_rosso', 'profumo_bianco', 'profumo_rosato', 'profumi', 'profumo')
+
+                    dolcezza = get_val(v, 'dolcezza_rosso', 'dolcezza_bianco', 'dolcezza_rosato', 'dolcezza', 'palato')
+                    corpo = get_val(v, 'corpo_rosso', 'corpo_bianco', 'corpo_rosato', 'corpo')
+                    acidita = get_val(v, 'acidita_rosso', 'acidita_bianco', 'acidita_rosato', 'acidita')
+                    tannini = get_val(v, 'tannicita_rosso', 'tannicita_bianco', 'tannicita_rosato', 'tannini',
+                                      'tannicita')
+                    livello_alcol = get_val(v, 'livello_alcolico_rosso', 'livello_alcolico_bianco',
+                                            'livello_alcolico_rosato', 'livello_alcolico')
+
+                    sapori = get_val(v, 'sapore_rosso', 'sapore_bianco', 'sapore_rosato', 'sapori', 'sapore')
+                    persistenza = get_val(v, 'persistenza_rosso', 'persistenza_bianco', 'persistenza_rosato',
+                                          'persistenza')
+                    qualita = get_val(v, 'qualita_rosso', 'qualita_bianco', 'qualita_rosato', 'qualita', 'giudizio',
+                                      'voto')
+
+                    # Titolo e dettagli (inclusa la data)
+                    elements.append(Paragraph(f"{i + 1}. {nome}", style_wine_title))
+                    elements.append(Paragraph(
+                        f"Cantina: <b>{cantina}</b> &nbsp;|&nbsp; Annata: <b>{anno}</b> &nbsp;|&nbsp; Gradazione: <b>{alcol}° vol.</b>{testo_data_pdf}",
+                        style_wine_sub))
+
+                    elements.append(Paragraph("Vista (Limpidezza / Intensità / Colore):", style_label))
+                    elements.append(Paragraph(f"{limpidezza} / {intensita_vista} / {colore}", style_value))
+
+                    elements.append(Paragraph("Olfatto (Condizione / Intensità):", style_label))
+                    elements.append(Paragraph(f"{condizione} / {intensita_naso}", style_value))
+
+                    elements.append(Paragraph("Profumi:", style_label))
+                    elements.append(Paragraph(profumi, style_value))
+
+                    elements.append(Paragraph("Palato:", style_label))
+                    elements.append(Paragraph(dolcezza, style_value))
+
+                    elements.append(Paragraph("Corpo / Acidità / Tannini / Alcol:", style_label))
+                    elements.append(Paragraph(f"{corpo} / {acidita} / {tannini} / {livello_alcol}", style_value))
+
+                    elements.append(Paragraph("Sapori:", style_label))
+                    elements.append(Paragraph(sapori, style_value))
+
+                    elements.append(Paragraph("Persistenza / Qualità:", style_label))
+                    elements.append(Paragraph(f"<b>{persistenza}</b> / <b>{qualita}</b>", style_value))
+
+                    elements.append(Spacer(1, 4))
+                    elements.append(
+                        HRFlowable(width="100%", thickness=1, color=colors.HexColor("#D3D3D3"), spaceAfter=12,
+                                   spaceBefore=6))
+
+            if vini_trovati_totali == 0:
+                elements.append(
+                    Paragraph("Nessun vino trovato negli archivi presi in considerazione.", styles['Normal']))
+
+            doc.build(elements)
+            print(f"PDF personalizzato per colore creato con successo in: {file_pdf}")
+
+        except Exception as e:
+            print(f"Errore nella generazione del PDF: {e}")
+
+    def mostra_menu_importa(self):
+        """Mostra il popup iniziale per l'importazione dei dati."""
+        content = BoxLayout(
+            orientation='vertical',
+            spacing=dp(15),
+            padding=dp(15)
+        )
+
+        # Pulsante Importa DB
+        btn_import = CustomOvalButton(
+            text="Seleziona File DB",
+            font_size='14sp',
+            bold=True,
+            color=(1, 1, 1, 1),
+            bg_color=[0.25, 0.55, 0.85, 1],  # Blu / Azzurro pastello
+            border_color=[0.0, 0.7, 0.9, 1],
+            size_hint=(None, None),
+            size=(dp(180), dp(48)),
+            pos_hint={'center_x': 0.5}
+        )
+
+        view = ModalView(
+            size_hint=(None, None),
+            size=(dp(240), dp(120)),
+            auto_dismiss=True,
+            background='',
+            background_color=(0, 0, 0, 0),
+            overlay_color=(0, 0, 0, 0.2)
+        )
+
+        btn_import.bind(on_release=lambda instance: [view.dismiss(), self.apri_file_chooser_importa()])
+
+        content.add_widget(btn_import)
+        view.add_widget(content)
+        view.open()
+
+    def apri_file_chooser_importa(self):
+        """Apre un FileChooser per selezionare il file JSON o DB da importare."""
+        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+
+        # Inizia a cercare nella cartella 'esportazioni' o nella directory corrente
+        path_iniziale = os.path.abspath("esportazioni") if os.path.exists("esportazioni") else os.getcwd()
+
+        file_chooser = FileChooserListView(
+            path=path_iniziale,
+            filters=['*.json'],
+            size_hint=(1, 1)
+        )
+        box.add_widget(file_chooser)
+
+        btn_box = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(10))
+
+        btn_annulla = Button(text="Annulla", size_hint_x=0.4)
+        btn_conferma = Button(text="Importa", size_hint_x=0.6, background_color=(0.25, 0.55, 0.85, 1))
+
+        btn_box.add_widget(btn_annulla)
+        btn_box.add_widget(btn_conferma)
+        box.add_widget(btn_box)
+
+        popup = Popup(
+            title="Seleziona File da Importare",
+            content=box,
+            size_hint=(0.9, 0.8)
+        )
+
+        btn_annulla.bind(on_release=popup.dismiss)
+        btn_conferma.bind(on_release=lambda x: self._prepara_importazione(file_chooser.selection, popup))
+
+        popup.open()
+
+    def _prepara_importazione(self, selezione, popup_file):
+        """Verifica il file selezionato e chiede la modalità di importazione."""
+        if not selezione:
+            return
+
+        percorso_file = selezione[0]
+        popup_file.dismiss()
+
+        # Popup per scegliere la modalità: Unisci vs Sostituisci
+        content = BoxLayout(orientation='vertical', spacing=dp(12), padding=dp(15))
+
+        lbl = Label(
+            text="Come desideri importare i vini?",
+            font_size='14sp',
+            bold=True,
+            size_hint_y=None,
+            height=dp(30)
+        )
+        content.add_widget(lbl)
+
+        btn_unisci = CustomOvalButton(
+            text="Unisci (Aggiungi nuovi)",
+            font_size='13sp',
+            bold=True,
+            color=(1, 1, 1, 1),
+            bg_color=[0.3, 0.65, 0.4, 1],  # Verde
+            border_color=[0.0, 0.7, 0.9, 1],
+            size_hint=(None, None),
+            size=(dp(200), dp(44)),
+            pos_hint={'center_x': 0.5}
+        )
+
+        btn_sostituisci = CustomOvalButton(
+            text="Sostituisci Tutto",
+            font_size='13sp',
+            bold=True,
+            color=(1, 1, 1, 1),
+            bg_color=[0.8, 0.3, 0.3, 1],  # Rosso
+            border_color=[0.0, 0.7, 0.9, 1],
+            size_hint=(None, None),
+            size=(dp(200), dp(44)),
+            pos_hint={'center_x': 0.5}
+        )
+
+        view = ModalView(
+            size_hint=(None, None),
+            size=(dp(250), dp(200)),
+            auto_dismiss=True,
+            background='',
+            background_color=(0, 0, 0, 0),
+            overlay_color=(0, 0, 0, 0.2)
+        )
+
+        btn_unisci.bind(
+            on_release=lambda x: [view.dismiss(), self.esegui_importazione(percorso_file, modalita="unisci")])
+        btn_sostituisci.bind(
+            on_release=lambda x: [view.dismiss(), self.esegui_importazione(percorso_file, modalita="sostituisci")])
+
+        content.add_widget(btn_unisci)
+        content.add_widget(btn_sostituisci)
+
+        view.add_widget(content)
+        view.open()
+
+    def esegui_importazione(self, percorso_file, modalita="unisci"):
+        """Importa i vini evitando duplicati basandosi su (Nome + Produttore + Annata)
+        e aggiorna la scheda se la versione importata ha una data più recente.
+        """
+        try:
+            import json
+            with open(percorso_file, 'r', encoding='utf-8') as f:
+                dati_importati = json.load(f)
+
+            # Estrazione vini dal file JSON
+            vini_da_importare = []
+            if isinstance(dati_importati, list):
+                vini_da_importare = dati_importati
+            elif isinstance(dati_importati, dict):
+                for table_val in dati_importati.values():
+                    if isinstance(table_val, dict):
+                        for doc_val in table_val.values():
+                            if isinstance(doc_val, dict):
+                                vini_da_importare.append(doc_val)
+                    elif isinstance(table_val, list):
+                        vini_da_importare.extend(table_val)
+
+            db_map = {
+                "rosso": self.db_red,
+                "bianco": self.db_white,
+                "rosato": self.db_pink
+            }
+
+            nuovi_inseriti = 0
+            aggiornati = 0
+
+            # Se sostituisci, svuota i DB
+            if modalita == "sostituisci":
+                for db in db_map.values():
+                    db.truncate()
+
+            for vino in vini_da_importare:
+                if not isinstance(vino, dict):
+                    continue
+
+                vino_pulito = {k: v for k, v in vino.items() if k != '_id'}
+
+                # Se manca la data nel file importato, usa la data attuale
+                if 'data_modifica' not in vino_pulito or not vino_pulito['data_modifica']:
+                    vino_pulito['data_modifica'] = datetime.now().isoformat()
+
+                # Riconoscimento categoria
+                cat_target = "rosso"
+                if any('bianco' in k.lower() for k in vino_pulito.keys()):
+                    cat_target = "bianco"
+                elif any('rosat' in k.lower() or 'pink' in k.lower() for k in vino_pulito.keys()):
+                    cat_target = "rosato"
+
+                db_target = db_map[cat_target]
+
+                # Helper per estrarre il valore pulito dai vari suffissi
+                def get_val(d, *keys):
+                    for k in keys:
+                        for dict_k, dict_v in d.items():
+                            if k in dict_k.lower() and dict_v:
+                                return str(dict_v).strip().lower()
+                    return ''
+
+                nome = get_val(vino_pulito, 'nome_rosso', 'nome_bianco', 'nome_rosato', 'nome')
+                produttore = get_val(vino_pulito, 'produttore_rosso', 'produttore_bianco', 'produttore_rosato', 'produttore', 'cantina')
+                annata = get_val(vino_pulito, 'annata_rosso', 'annata_bianco', 'annata_rosato', 'annata')
+
+                if modalita == "sostituisci":
+                    db_target.insert(vino_pulito)
+                    nuovi_inseriti += 1
+                else:
+                    # Modalità UNISCI: Cerca duplicati
+                    tutti_esistenti = db_target.all()
+                    trovato_doc = None
+
+                    for doc in tutti_esistenti:
+                        d_nome = get_val(doc, 'nome_rosso', 'nome_bianco', 'nome_rosato', 'nome')
+                        d_prod = get_val(doc, 'produttore_rosso', 'produttore_bianco', 'produttore_rosato', 'produttore', 'cantina')
+                        d_ann = get_val(doc, 'annata_rosso', 'annata_bianco', 'annata_rosato', 'annata')
+
+                        if d_nome == nome and d_prod == produttore and d_ann == annata:
+                            trovato_doc = doc
+                            break
+
+                    if trovato_doc:
+                        # Confronto date di modifica
+                        data_esistente = trovato_doc.get('data_modifica', '1970-01-01T00:00:00')
+                        data_nuova = vino_pulito.get('data_modifica', '1970-01-01T00:00:00')
+
+                        if data_nuova > data_esistente:
+                            db_target.update(vino_pulito, doc_ids=[trovato_doc.doc_id])
+                            aggiornati += 1
+                    else:
+                        db_target.insert(vino_pulito)
+                        nuovi_inseriti += 1
+
+            # Ricarica lo schermo dell'archivio attivo
+            current_screen = self.sm.current_screen if hasattr(self, 'sm') else None
+            if current_screen and hasattr(current_screen, 'load_archive_data'):
+                current_screen.load_archive_data()
+
+            msg = f"Importazione completata!\n\nNuovi inseriti: {nuovi_inseriti}\nSchede aggiornate: {aggiornati}"
+            popup_successo = Popup(
+                title="Esito Importazione",
+                content=Label(text=msg, halign='center'),
+                size_hint=(None, None),
+                size=(dp(300), dp(180))
+            )
+            popup_successo.open()
+
+        except Exception as e:
+            popup_errore = Popup(
+                title="Errore Importazione",
+                content=Label(text=f"Impossibile importare il file:\n{e}"),
+                size_hint=(None, None),
+                size=(dp(320), dp(180))
+            )
+            popup_errore.open()
+
 
 if __name__ == '__main__':
     WineApp().run()
