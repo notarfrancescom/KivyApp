@@ -89,4 +89,4 @@ android.meta_data = kivy_graphics_engine=gles2
 [buildozer]
 
 # Livello di Log (2 = Info)
-log_level = 1
+log_level = 2
