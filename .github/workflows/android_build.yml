@@ -83,7 +83,7 @@ jobs:
           # Aggiunge i binari Android alla PATH di sistema
           echo "PATH=$PATH:$SDK_DIR/platform-tools:$SDK_DIR/cmdline-tools/latest/bin" >> $GITHUB_ENV
           
-            # 4. Compilazione DEBUG APK via Buildozer
+      # 4. Compilazione DEBUG APK via Buildozer
       - name: Compile DEBUG APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
@@ -91,15 +91,15 @@ jobs:
           set +e
           
           echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
-          # Esegue buildozer reindirizzando l'output su file e terminale
-          buildozer -v android debug 2>&1 | tee buildozer.log
-          BUILD_STATUS=${PIPESTATUS[0]}
+          buildozer -v android debug
+          BUILD_STATUS=$?
           
           if [ $BUILD_STATUS -ne 0 ]; then
             echo "=========================================="
-            echo ">>> BUILD FALLITA! ULTIME 100 RIGHE DEL LOG:"
+            echo ">>> ERRORE RILEVATO. CERCO IL LOG DI P4A:"
             echo "=========================================="
-            tail -n 100 buildozer.log
+            # Trova e stampa l'effettivo log d'errore di python-for-android
+            find .buildozer/android/platform/build-* -name "log.txt" -exec cat {} +
             exit 1
           fi
           
@@ -113,7 +113,6 @@ jobs:
           echo "APK trovato: $APK_PATH"
           
           cp "$APK_PATH" myapp-debug.apk
-          echo "APK rinominato in myapp-debug.apk"
 
       # 5. Upload dell'APK come Artifact
       - name: Upload APK
