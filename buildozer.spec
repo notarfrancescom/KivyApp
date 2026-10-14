@@ -41,7 +41,7 @@ version = 0.1
 #requirements = python3,kivy==2.3.1,filetype,tinydb
 #requirements = python3, kivy==2.3.0, sdl2, sdl2_image, sdl2_ttf, filetype, tinydb
 #requirements = python3==3.11.5,kivy,tinydb,reportlab,pillow,setuptools
-requirements = python3,hostpython3,kivy,tinydb,pillow,setuptools
+requirements = python3==3.11,kivy,tinydb,pillow,setuptools
 
 
 # Versione Python (allineata al workflow)
@@ -65,7 +65,7 @@ android.minapi = 21
 # ARCHITETTURE E RAMO P4A (Aggiungilo qui)
 android.archs = arm64-v8a, armeabi-v7a
 #p4a.branch = master
-#p4a.branch = v2024.09.0
+p4a.branch = develop
 
 # Versione NDK (compatibile con python-for-android)
 android.ndk = 25c
