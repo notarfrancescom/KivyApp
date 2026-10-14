@@ -88,17 +88,16 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
-          buildozer appclean
-          echo ">>> Avvio compilazione con salvataggio log completo"
+          echo ">>> Pulizia completa della cache di build"
+          rm -rf .buildozer
           
-          # Esegue buildozer reindirizzando tutto l'output su un file locale
+          echo ">>> Avvio compilazione con salvataggio log"
           buildozer -v android debug > buildozer_full.log 2>&1 || BUILD_FAILED=true
           
           if [ "$BUILD_FAILED" = "true" ]; then
             echo "=========================================="
             echo ">>> BUILD FALLITA. ECCO GLI ERRORI TROVATI:"
             echo "=========================================="
-            # Stampa solo le righe critiche di errore o eccezione dal log
             grep -iE "error|traceback|failed" buildozer_full.log || tail -n 50 buildozer_full.log
             exit 1
           fi
