@@ -88,14 +88,23 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
-          echo ">>> Avvio compilazione con Buildozer (Debug APK)"
-          # Esegue buildozer senza sopprimere l'output e mostra tutto in caso di errore
-          buildozer -v android debug || {
+          echo ">>> Avvio compilazione con salvataggio log completo"
+          
+          # Esegue buildozer reindirizzando tutto l'output su un file locale
+          buildozer -v android debug > buildozer_full.log 2>&1 || BUILD_FAILED=true
+          
+          if [ "$BUILD_FAILED" = "true" ]; then
             echo "=========================================="
-            echo ">>> LA COMPILAZIONE È FALLITA. ECCO GLI ULTIMI COMANDI:"
+            echo ">>> BUILD FALLITA. ECCO GLI ERRORI TROVATI:"
             echo "=========================================="
+            # Stampa solo le righe critiche di errore o eccezione dal log
+            grep -iE "error|traceback|failed" buildozer_full.log || tail -n 50 buildozer_full.log
             exit 1
-          }
+          fi
+          
+          echo ">>> Ricerca APK generato"
+          APK_PATH=$(find bin -name "*-debug.apk" -print -quit)
+          cp "$APK_PATH" myapp-debug.apk
 
       # 5. Upload dell'APK come Artifact
       - name: Upload APK
