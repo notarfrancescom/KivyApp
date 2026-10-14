@@ -25,12 +25,11 @@ jobs:
       # 2. Installazione di Buildozer, Dipendenze e Java 17
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
+          pip install --upgrade "pip<24.2"
           pip install "cython<3.0" buildozer
           sudo apt update
-          # Aggiunta di pacchetti standard e installazione di Java 17 (richiesto da Buildozer/Android SDK)
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
           
-          # Imposta JAVA_HOME e aggiunge bin alla PATH
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
           echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
