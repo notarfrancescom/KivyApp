@@ -88,34 +88,14 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
-          set +e
-
-          echo ">>> Pulizia build precedenti"
-          buildozer clean
-          
-          echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
-          buildozer -v android debug
-          BUILD_STATUS=$?
-          
-          if [ $BUILD_STATUS -ne 0 ]; then
+          echo ">>> Avvio compilazione con Buildozer (Debug APK)"
+          # Esegue buildozer senza sopprimere l'output e mostra tutto in caso di errore
+          buildozer -v android debug || {
             echo "=========================================="
-            echo ">>> ERRORE RILEVATO. CERCO TUTTI I LOG DI P4A:"
+            echo ">>> LA COMPILAZIONE È FALLITA. ECCO GLI ULTIMI COMANDI:"
             echo "=========================================="
-            # Cerca e stampa qualsiasi log.txt dentro la cartella .buildozer
-            find . -name "log.txt" -exec echo "=== FILE: {} ===" \; -exec cat {} \;
             exit 1
-          fi
-          
-          echo ">>> Ricerca APK generato"
-          APK_PATH=$(find bin -name "*-debug.apk" -print -quit)
-          
-          if [ -z "$APK_PATH" ]; then
-            echo "Errore: APK di debug non trovato!"
-            exit 1
-          fi
-          echo "APK trovato: $APK_PATH"
-          
-          cp "$APK_PATH" myapp-debug.apk
+          }
 
       # 5. Upload dell'APK come Artifact
       - name: Upload APK
