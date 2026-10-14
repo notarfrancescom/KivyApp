@@ -99,10 +99,10 @@ jobs:
           
           if [ $BUILD_STATUS -ne 0 ]; then
             echo "=========================================="
-            echo ">>> ERRORE RILEVATO. CERCO IL LOG DI P4A:"
+            echo ">>> ERRORE RILEVATO. CERCO TUTTI I LOG DI P4A:"
             echo "=========================================="
-            # Trova e stampa l'effettivo log d'errore di python-for-android
-            find .buildozer/android/platform/build-* -name "log.txt" -exec cat {} +
+            # Cerca e stampa qualsiasi log.txt dentro la cartella .buildozer
+            find . -name "log.txt" -exec echo "=== FILE: {} ===" \; -exec cat {} \;
             exit 1
           fi
           
