@@ -86,11 +86,12 @@ jobs:
       - name: Compile DEBUG APK via Buildozer
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          MAKEFLAGS: "-j1"
         run: |
-          echo ">>> Pulizia completa della cache di build"
-          rm -rf .buildozer bin .old_buildozer
+          echo ">>> Pulizia profonda delle directory di build"
+          rm -rf .buildozer bin
           
-          echo ">>> Avvio compilazione con salvataggio log"
+          echo ">>> Avvio compilazione sequenziale"
           buildozer -v android debug > buildozer_full.log 2>&1 || BUILD_FAILED=true
           
           if [ "$BUILD_FAILED" = "true" ]; then
