@@ -89,6 +89,9 @@ jobs:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           set +e
+
+          echo ">>> Pulizia build precedenti"
+          buildozer clean
           
           echo ">>> Avvio ricompilazione con Buildozer (Debug APK)"
           buildozer -v android debug
