@@ -88,6 +88,7 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
+          buildozer appclean
           echo ">>> Avvio compilazione con salvataggio log completo"
           
           # Esegue buildozer reindirizzando tutto l'output su un file locale
