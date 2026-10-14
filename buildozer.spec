@@ -43,7 +43,6 @@ version = 0.1
 #requirements = python3==3.11.5,kivy,tinydb,reportlab,pillow,setuptools
 requirements = python3==3.11.5, hostpython3==3.11.5, kivy, tinydb, pillow, setuptools
 
-
 # Versione Python (allineata al workflow)
 python.version = 3.11
 
