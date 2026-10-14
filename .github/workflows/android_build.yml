@@ -88,7 +88,7 @@ jobs:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
         run: |
           echo ">>> Pulizia completa della cache di build"
-          rm -rf .buildozer
+          rm -rf .buildozer bin .old_buildozer
           
           echo ">>> Avvio compilazione con salvataggio log"
           buildozer -v android debug > buildozer_full.log 2>&1 || BUILD_FAILED=true
