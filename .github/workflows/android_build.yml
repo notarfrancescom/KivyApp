@@ -25,7 +25,7 @@ jobs:
       # 2. Installazione di Buildozer, Dipendenze e Java 17
       - name: Install Buildozer, Dependencies, and Java 17
         run: |
-          pip install --upgrade "pip<24.2"
+          pip install --upgrade "pip<24.2" "setuptools<70.0"
           pip install "cython<3.0" buildozer
           sudo apt update
           sudo apt install -y build-essential git wget zip unzip zlib1g-dev libtool m4 openjdk-17-jdk curl autoconf automake
