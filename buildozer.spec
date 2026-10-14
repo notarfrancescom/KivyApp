@@ -65,7 +65,7 @@ android.minapi = 21
 # ARCHITETTURE E RAMO P4A (Aggiungilo qui)
 android.archs = arm64-v8a, armeabi-v7a
 #p4a.branch = master
-p4a.branch = v2024.09.0
+#p4a.branch = v2024.09.0
 
 # Versione NDK (compatibile con python-for-android)
 android.ndk = 25c
