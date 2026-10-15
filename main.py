@@ -26,12 +26,6 @@ from tinydb import TinyDB, Query
 import json  # Utile per visualizzare i dati per debug
 from kivy.core.window import Window
 
-# reportlab per il PDF
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-
 # Importa i widget utilizzati nel KV
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
@@ -40,9 +34,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-#Window.size = (360, 640)
+Window.size = (360, 640)
 #Window.size = (1080, 1920)
-#Window.resizable = False
+Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -2160,22 +2154,22 @@ class WineApp(App):
             text="Esporta DB",
             font_size='14sp',
             bold=True,
-            color=(0.1, 0.1, 0.1, 1),        # Testo scuro per un contrasto migliore sul verde chiaro
-            bg_color=[0.45, 0.85, 0.55, 1],   # Verde Chiaro
-            border_color=[0.0, 0.7, 0.9, 1], # Bordo Ciano/Azzurro
+            color=(0.1, 0.1, 0.1, 1),
+            bg_color=[0.45, 0.85, 0.55, 1],
+            border_color=[0.0, 0.7, 0.9, 1],
             size_hint=(None, None),
             size=(dp(160), dp(48)),
             pos_hint={'center_x': 0.5}
         )
 
-        # Bottone Esporta PDF (Viola chiaro)
-        btn_pdf = CustomOvalButton(
-            text="Esporta PDF",
+        # Bottone Esporta HTML
+        btn_html = CustomOvalButton(
+            text="Esporta HTML",
             font_size='14sp',
             bold=True,
-            color=(1, 1, 1, 1),              # Testo bianco
+            color=(1, 1, 1, 1),
             bg_color=[0.68, 0.48, 0.82, 1],  # Viola Chiaro
-            border_color=[0.0, 0.7, 0.9, 1], # Bordo Ciano/Azzurro
+            border_color=[0.0, 0.7, 0.9, 1],
             size_hint=(None, None),
             size=(dp(160), dp(48)),
             pos_hint={'center_x': 0.5}
@@ -2191,24 +2185,24 @@ class WineApp(App):
         )
 
         btn_db.bind(on_release=lambda instance: [view.dismiss(), self.esporta_file_db()])
-        btn_pdf.bind(on_release=lambda instance: [view.dismiss(), self.mostra_scelta_pdf()])
+
+        # Chiamiamo mostra_scelta_html senza argomenti obbligatori
+        btn_html.bind(on_release=lambda instance: [view.dismiss(), self.mostra_scelta_html()])
 
         content.add_widget(btn_db)
-        content.add_widget(btn_pdf)
+        content.add_widget(btn_html)
 
         view.add_widget(content)
         view.open()
 
-
-    def mostra_scelta_pdf(self):
-        """Apre un ModalView trasparente con pulsanti personalizzati in tonalità pastello."""
+    def mostra_scelta_html(self):
+        """Apre un ModalView trasparente per scegliere la categoria da esportare in HTML."""
         content = BoxLayout(
             orientation='vertical',
             spacing=dp(12),
             padding=dp(15)
         )
 
-        # Configurazione opzioni: (Testo, Categoria, Colore Sfondo RGBA, Colore Testo RGBA)
         opzioni = [
             ("Tutti gli archivi", "tutti", [0.72, 0.75, 0.80, 1], (0.15, 0.15, 0.15, 1)),
             ("Solo Rossi", "rossi", [0.7, 0.45, 0.45, 1], (1, 1, 1, 1)),
@@ -2220,9 +2214,9 @@ class WineApp(App):
             size_hint=(None, None),
             size=(dp(240), dp(260)),
             auto_dismiss=True,
-            background='',  # Rimuove lo sfondo scuro predefinito
+            background='',
             background_color=(0, 0, 0, 0),
-            overlay_color=(0, 0, 0, 0.2)  # Oscuramento leggero dello sfondo
+            overlay_color=(0, 0, 0, 0.2)
         )
 
         for testo, cat, color_bg, color_text in opzioni:
@@ -2232,17 +2226,17 @@ class WineApp(App):
                 bold=True,
                 color=color_text,
                 bg_color=color_bg,
-                border_color=[0.0, 0.7, 0.9, 1],  # Mantiene il bordo ciano/azzurro per continuità stilistica
+                border_color=[0.0, 0.7, 0.9, 1],
                 size_hint=(None, None),
                 size=(dp(180), dp(44)),
                 pos_hint={'center_x': 0.5}
             )
-            # Binding per chiudere il popup ed eseguire l'esportazione PDF selezionata
-            btn.bind(on_release=lambda instance, c=cat: [view.dismiss(), self.esporta_file_pdf(c)])
+            btn.bind(on_release=lambda instance, c=cat: [view.dismiss(), self.esporta_file_html(c)])
             content.add_widget(btn)
 
         view.add_widget(content)
         view.open()
+
 
     def esporta_file_db(self):
         """Esporta un backup dei database dell'applicazione nella cartella di destinazione adatta (Download su Android, esportazioni su Desktop)."""
@@ -2304,241 +2298,241 @@ class WineApp(App):
         print(f"DEBUG: File {nome_file} non trovato nei percorsi controllati.")
         return []
 
-    def esporta_file_pdf(self, categoria="tutti"):
-        """Genera un PDF dettagliato dinamico nei colori in base alla tipologia di vino."""
+    def esporta_file_html(self, categoria):
+        """Genera un report HTML dettagliato rispettando l'ordinamento attivo nell'app."""
         CARTELLA_DEST = get_export_folder()
-        file_pdf = os.path.join(CARTELLA_DEST, f"degustazioni_{categoria}.pdf")
+        dati_vini = []
 
-        # Mappatura: Categoria -> (Nome Sezione, File DB, Colore Primario, Colore Etichette)
-        mppa_files = {
-            "rossi": ("Vini Rossi", "red_wine_database.json", "#722F37", "#8B0000"),
-            "bianchi": ("Vini Bianchi", "white_wine_database.json", "#8B7500", "#B8860B"),
-            "rosati": ("Vini Rosati", "pink_wine_database.json", "#C71585", "#DB7093")
+        # Recuperiamo i criteri di ordinamento salvati nell'app (se presenti)
+        criterio_attivo = getattr(self, 'ultimo_criterio_ord', 'Inserimento')
+        verso_crescente = getattr(self, 'ultimo_verso_crescente', False)
+
+        # Mappatura delle categorie, dei file e del tipo vino corrispondente per la funzione di ordinamento
+        config_categorie = {
+            "rossi": [("Vini Rossi", "red_wine_database.json", "rosso")],
+            "rosati": [("Vini Rosati", "pink_wine_database.json", "rosato")],
+            "bianchi": [("Vini Bianchi", "white_wine_database.json", "bianco")],
+            "tutti": [
+                ("Vini Rossi", "red_wine_database.json", "rosso"),
+                ("Vini Rosati", "pink_wine_database.json", "rosato"),
+                ("Vini Bianchi", "white_wine_database.json", "bianco")
+            ]
         }
 
-        try:
-            doc = SimpleDocTemplate(
-                file_pdf,
-                pagesize=letter,
-                rightMargin=36,
-                leftMargin=36,
-                topMargin=36,
-                bottomMargin=36
-            )
-            elements = []
-            styles = getSampleStyleSheet()
+        elementi_da_elaborare = config_categorie.get(categoria, [])
 
-            # Titolo Documento Principale
-            titolo_generale_colore = mppa_files.get(categoria, ("", "", "#722F37", ""))[2]
-            style_title = ParagraphStyle(
-                'DocTitle',
-                parent=styles['Title'],
-                fontName='Helvetica-Bold',
-                fontSize=22,
-                textColor=colors.HexColor(titolo_generale_colore),
-                spaceAfter=15
-            )
+        from tinydb import TinyDB
+        for titolo_sezione, filename, tipo_vino in elementi_da_elaborare:
+            if os.path.exists(filename):
+                db = TinyDB(filename)
+                raw_wines = db.all()
+                db.close()
 
-            titoli = {
-                "tutti": "Catalogo Degustazione Completo",
-                "rossi": "Catalogo Degustazione - Vini Rossi",
-                "rosati": "Catalogo Degustazione - Vini Rosati",
-                "bianchi": "Catalogo Degustazione - Vini Bianchi"
-            }
+                if raw_wines:
+                    # Normalizziamo i record esattamente come fa la schermata di archivio
+                    all_wines = []
+                    for wine_document in raw_wines:
+                        wine_data = dict(wine_document)
+                        wine_data['_id'] = wine_document.doc_id
+                        wine_data['doc_id'] = wine_document.doc_id
+                        all_wines.append(wine_data)
 
-            elements.append(Paragraph(titoli.get(categoria, "Catalogo Degustazione Vini"), style_title))
-            elements.append(Spacer(1, 10))
+                    # Applichiamo lo stesso identico ordinamento usato nell'app!
+                    try:
+                        vini_ordinati = ordina_lista_vini(
+                            all_wines,
+                            criterio=criterio_attivo,
+                            tipo_vino=tipo_vino,
+                            crescente=verso_crescente
+                        )
+                    except Exception as e:
+                        print(f"Errore nell'ordinamento dei vini per l'export: {e}")
+                        vini_ordinati = all_wines
 
-            def get_val(v, *chiavi):
-                """Estrae il primo valore disponibile provando diverse chiavi ed eventuali liste."""
-                for k in chiavi:
-                    val = v.get(k)
-                    if val is not None and val != "":
-                        if isinstance(val, list):
-                            return ", ".join(map(str, val))
-                        return str(val)
-                return "-"
+                    dati_vini.append((titolo_sezione, vini_ordinati))
 
-            categorie_da_elaborare = ["rossi", "bianchi", "rosati"] if categoria == "tutti" else [categoria]
-            vini_trovati_totali = 0
+        nome_file = f"report_vini_{categoria}.html"
+        percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
 
-            for idx_cat, cat_key in enumerate(categorie_da_elaborare):
-                if cat_key not in mppa_files:
-                    continue
+        # Costruzione dell'HTML con il dettaglio completo delle schede
+        righe_html = f"""<!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Report Degustazione Vini - {categoria.capitalize()}</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background-color: #f9f9fb;
+                color: #333;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 700px;
+                background: #fff;
+                padding: 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                margin: auto;
+            }}
+            h1 {{
+                color: #722F37;
+                text-align: center;
+                border-bottom: 3px solid #722F37;
+                padding-bottom: 12px;
+                margin-bottom: 25px;
+            }}
+            h2 {{
+                color: #444;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 6px;
+                margin-top: 30px;
+            }}
+            .vino-card {{
+                background: #fdfdfd;
+                border: 1px solid #e5e5e5;
+                border-radius: 6px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }}
+            .vino-card p {{
+                margin: 4px 0;
+            }}
+            .label {{
+                font-weight: bold;
+                color: #555;
+            }}
+            .footer {{
+                text-align: center;
+                margin-top: 30px;
+                font-size: 0.85em;
+                color: #777;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Report Degustazione - {categoria.upper()}</h1>
+            <p style="text-align: center; color: #666; font-size: 0.9em;">Criterio di ordinamento: <b>{criterio_attivo}</b> ({'Crescente' if verso_crescente else 'Decrescente'})</p>
+    """
 
-                titolo_cat, nome_file, hex_primario, hex_etichette = mppa_files[cat_key]
-                vini_grezzi = self.carica_vini_da_file(nome_file)
+        if not dati_vini:
+            righe_html += "<p style='text-align: center; color: #777;'>Nessun dato trovato per questa categoria.</p>"
+        else:
+            for sezione, records in dati_vini:
+                righe_html += f"<h2>{sezione}</h2>"
+                for r in records:
+                    if isinstance(r, dict):
+                        suf = "_rosso" if "rosso" in "".join(r.keys()) else (
+                            "_bianco" if "bianco" in "".join(r.keys()) else "")
 
-                # Normalizzazione dati vini
-                vini_sezione = []
-                for item in vini_grezzi:
-                    if isinstance(item, dict):
-                        valori_dict = [v for v in item.values() if isinstance(v, dict)]
-                        if valori_dict and not any(k for k in item.keys() if 'nome' in k or 'produttore' in k):
-                            vini_sezione.extend(valori_dict)
-                        else:
-                            vini_sezione.append(item)
+                        nome = r.get(f'nome{suf}', r.get('nome', 'Vino senza nome'))
+                        annata = r.get(f'annata{suf}', r.get('annata', 'N/D'))
+                        produttore = r.get(f'produttore{suf}', r.get('produttore', 'N/D'))
+                        alcol = r.get(f'alcol{suf}', r.get('alcol', 'N/D'))
+                        data_mod = r.get('data_modifica', '')[:10]
+                        if data_mod:
+                            parts = data_mod.split('-')
+                            if len(parts) == 3:
+                                data_mod = f"({parts[2]}/{parts[1]}/{parts[0][2:]})"
 
-                if not vini_sezione:
-                    continue
+                        limpidezza = r.get(f'limpidezza{suf}', r.get('limpidezza', 'N/D'))
+                        intensita_v = r.get(f'intensita_vista{suf}', r.get('intensita_vista', 'N/D'))
+                        colore = r.get(f'colore{suf}', r.get('colore', 'N/D'))
+                        if isinstance(colore, list):
+                            colore = ", ".join(colore)
 
-                    # Recupera l'ultimo ordinamento impostato dall'utente nell'app
-                app = App.get_running_app()
-                criterio_pdf = getattr(app, 'ultimo_criterio_ord', 'Inserimento')
-                crescente_pdf = getattr(app, 'ultimo_verso_crescente', False)
+                        condizione = r.get(f'condizione{suf}', r.get('condizione', 'N/D'))
+                        intensita_n = r.get(f'intensita_naso{suf}', r.get('intensita_naso', 'N/D'))
+                        profumo = r.get(f'profumo{suf}', r.get('profumo', 'N/D'))
+                        if isinstance(profumo, list):
+                            profumo = ", ".join(profumo)
 
-                # Mappatura semplice del tipo vino per l'helper
-                tipo_map = {"rossi": "rosso", "bianchi": "bianco", "rosati": "rosato"}
-                tipo_vino_str = tipo_map.get(cat_key, "rosso")
+                        dolcezza = r.get(f'dolcezza{suf}', r.get('dolcezza', 'N/D'))
+                        corpo = r.get(f'corpo{suf}', r.get('corpo', 'N/D'))
+                        acidita = r.get(f'acidita{suf}', r.get('acidita', 'N/D'))
+                        tannicita = r.get(f'tannicita{suf}', r.get('tannicita', 'N/D'))
+                        livello_alc = r.get(f'livello_alcolico{suf}', r.get('livello_alcolico', 'N/D'))
 
-                # Applica lo stesso ordinamento dell'archivio alla lista del PDF
-                vini_sezione = ordina_lista_vini(
-                    vini_sezione,
-                    criterio=criterio_pdf,
-                    tipo_vino=tipo_vino_str,
-                    crescente=crescente_pdf
-                )
+                        sapore = r.get(f'sapore{suf}', r.get('sapore', 'N/D'))
+                        if isinstance(sapore, list):
+                            sapore = ", ".join(sapore)
 
-                vini_trovati_totali += len(vini_sezione)
+                        persistenza = r.get(f'persistenza{suf}', r.get('persistenza', 'N/D'))
+                        qualita = r.get(f'qualita{suf}', r.get('qualita', 'N/D'))
 
-                # Salto pagina prima delle tipologie successive (nel PDF completo)
-                if categoria == "tutti" and idx_cat > 0 and len(elements) > 2:
-                    elements.append(PageBreak())
+                        righe_html += f"""
+                        <div class="vino-card">
+                            <h3 style="color: #722F37; margin-top: 0; margin-bottom: 5px;">{nome} <span style="font-size: 0.8em; color: #666;">{data_mod}</span></h3>
+                            <p style="margin: 2px 0 10px 0; font-weight: bold; color: #444;">{produttore} &nbsp;&nbsp; {annata} &nbsp;&nbsp; {alcol}° vol.</p>
 
-                # Definizione Stili Dinamici per la Tipologia Corrente
-                style_category_header = ParagraphStyle(
-                    f'CatHeader_{cat_key}',
-                    fontName='Helvetica-Bold',
-                    fontSize=18,
-                    alignment=1,
-                    textColor=colors.HexColor(hex_primario),
-                    spaceBefore=10,
-                    spaceAfter=10
-                )
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 8px 0;">
 
-                style_wine_title = ParagraphStyle(
-                    f'WineTitle_{cat_key}',
-                    fontName='Helvetica-Bold',
-                    fontSize=15,
-                    textColor=colors.HexColor(hex_primario),
-                    spaceAfter=4
-                )
+                            <p><span class="label">Vista (Limpidezza / Intensità / Colore):</span><br>
+                            {limpidezza} / {intensita_v} / {colore}</p>
 
-                style_wine_sub = ParagraphStyle(
-                    'WineSub',
-                    fontName='Helvetica-Oblique',
-                    fontSize=11,
-                    textColor=colors.HexColor("#4A4A4A"),
-                    spaceAfter=8
-                )
+                            <p><span class="label">Olfatto (Condizione / Intensità):</span><br>
+                            {condizione} / {intensita_n}</p>
 
-                style_label = ParagraphStyle(
-                    f'FieldLabel_{cat_key}',
-                    fontName='Helvetica-Bold',
-                    fontSize=10,
-                    textColor=colors.HexColor(hex_etichette),
-                    spaceBefore=3,
-                    spaceAfter=1
-                )
+                            <p><span class="label">Profumi:</span><br>
+                            {profumo}</p>
 
-                style_value = ParagraphStyle(
-                    'FieldValue',
-                    fontName='Helvetica',
-                    fontSize=10,
-                    textColor=colors.black,
-                    spaceAfter=5
-                )
+                            <p><span class="label">Palato:</span><br>
+                            {dolcezza}</p>
 
-                # Header Sezione Tipologia
-                elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor(hex_primario), spaceAfter=8,
-                                           spaceBefore=10))
-                elements.append(
-                    Paragraph(f"<b>--- {titolo_cat.upper()} ({len(vini_sezione)}) ---</b>", style_category_header))
-                elements.append(
-                    HRFlowable(width="100%", thickness=2, color=colors.HexColor(hex_primario), spaceAfter=15,
-                               spaceBefore=8))
+                            <p><span class="label">Corpo / Acidità / Tannini / Alcol:</span><br>
+                            {corpo} / {acidita} / {tannicita} / {livello_alc}</p>
 
-                # Schede dei singoli vini con colori abbinati
-                for i, v in enumerate(vini_sezione):
-                    if not isinstance(v, dict):
-                        continue
+                            <p><span class="label">Sapori:</span><br>
+                            {sapore}</p>
 
-                    nome = get_val(v, 'nome_rosso', 'nome_bianco', 'nome_rosato', 'nome', 'nome_vino', 'name')
-                    cantina = get_val(v, 'produttore_rosso', 'produttore_bianco', 'produttore_rosato', 'cantina',
-                                      'produttore', 'winery')
-                    anno = get_val(v, 'annata_rosso', 'annata_bianco', 'annata_rosato', 'anno', 'annata', 'year')
-                    alcol = get_val(v, 'alcol_rosso', 'alcol_bianco', 'alcol_rosato', 'grado', 'gradazione', 'alcol')
+                            <p><span class="label">Persistenza / Qualità:</span><br>
+                            {persistenza} / {qualita}</p>
+                        </div>
+                        """
+                    else:
+                        righe_html += f"<div class='vino-card'><p>{str(r)}</p></div>"
 
-                    # --- RECUPERO E FORMATTAZIONE DELLA DATA ---
-                    data_raw = v.get('data_modifica', '')
-                    data_str = formatta_data(data_raw)
-                    testo_data_pdf = f" &nbsp;|&nbsp; Data: <b>{data_str}</b>" if data_str else ""
+        righe_html += """
+            <div class="footer">
+                Generato con WineTastingApp
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
-                    limpidezza = get_val(v, 'limpidezza_rosso', 'limpidezza_bianco', 'limpidezza_rosato', 'limpidezza')
-                    intensita_vista = get_val(v, 'intensita_vista_rosso', 'intensita_vista_bianco',
-                                              'intensita_vista_rosato', 'intensita_vista')
-                    colore = get_val(v, 'colore_rosso', 'colore_bianco', 'colore_rosato', 'colore')
+        with open(percorso_completo, "w", encoding="utf-8") as f:
+            f.write(righe_html)
 
-                    condizione = get_val(v, 'condizione_rosso', 'condizione_bianco', 'condizione_rosato', 'condizione')
-                    intensita_naso = get_val(v, 'intensita_naso_rosso', 'intensita_naso_bianco',
-                                             'intensita_naso_rosato', 'intensita_naso')
-                    profumi = get_val(v, 'profumo_rosso', 'profumo_bianco', 'profumo_rosato', 'profumi', 'profumo')
+        self.apri_file_esternamente(percorso_completo)
 
-                    dolcezza = get_val(v, 'dolcezza_rosso', 'dolcezza_bianco', 'dolcezza_rosato', 'dolcezza', 'palato')
-                    corpo = get_val(v, 'corpo_rosso', 'corpo_bianco', 'corpo_rosato', 'corpo')
-                    acidita = get_val(v, 'acidita_rosso', 'acidita_bianco', 'acidita_rosato', 'acidita')
-                    tannini = get_val(v, 'tannicita_rosso', 'tannicita_bianco', 'tannicita_rosato', 'tannini',
-                                      'tannicita')
-                    livello_alcol = get_val(v, 'livello_alcolico_rosso', 'livello_alcolico_bianco',
-                                            'livello_alcolico_rosato', 'livello_alcolico')
+    def apri_file_esternamente(self, percorso_file):
+        from kivy.utils import platform
+        if platform == 'android':
+            try:
+                from jnius import autoclass
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                Intent = autoclass('android.content.Intent')
+                Uri = autoclass('android.net.Uri')
+                File = autoclass('java.io.File')
 
-                    sapori = get_val(v, 'sapore_rosso', 'sapore_bianco', 'sapore_rosato', 'sapori', 'sapore')
-                    persistenza = get_val(v, 'persistenza_rosso', 'persistenza_bianco', 'persistenza_rosato',
-                                          'persistenza')
-                    qualita = get_val(v, 'qualita_rosso', 'qualita_bianco', 'qualita_rosato', 'qualita', 'giudizio',
-                                      'voto')
+                file_obj = File(percorso_file)
+                uri = Uri.fromFile(file_obj)
 
-                    # Titolo e dettagli (inclusa la data)
-                    elements.append(Paragraph(f"{i + 1}. {nome}", style_wine_title))
-                    elements.append(Paragraph(
-                        f"Cantina: <b>{cantina}</b> &nbsp;|&nbsp; Annata: <b>{anno}</b> &nbsp;|&nbsp; Gradazione: <b>{alcol}° vol.</b>{testo_data_pdf}",
-                        style_wine_sub))
+                intent = Intent(Intent.ACTION_VIEW)
+                intent.setDataAndType(uri, "text/html")
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                    elements.append(Paragraph("Vista (Limpidezza / Intensità / Colore):", style_label))
-                    elements.append(Paragraph(f"{limpidezza} / {intensita_vista} / {colore}", style_value))
-
-                    elements.append(Paragraph("Olfatto (Condizione / Intensità):", style_label))
-                    elements.append(Paragraph(f"{condizione} / {intensita_naso}", style_value))
-
-                    elements.append(Paragraph("Profumi:", style_label))
-                    elements.append(Paragraph(profumi, style_value))
-
-                    elements.append(Paragraph("Palato:", style_label))
-                    elements.append(Paragraph(dolcezza, style_value))
-
-                    elements.append(Paragraph("Corpo / Acidità / Tannini / Alcol:", style_label))
-                    elements.append(Paragraph(f"{corpo} / {acidita} / {tannini} / {livello_alcol}", style_value))
-
-                    elements.append(Paragraph("Sapori:", style_label))
-                    elements.append(Paragraph(sapori, style_value))
-
-                    elements.append(Paragraph("Persistenza / Qualità:", style_label))
-                    elements.append(Paragraph(f"<b>{persistenza}</b> / <b>{qualita}</b>", style_value))
-
-                    elements.append(Spacer(1, 4))
-                    elements.append(
-                        HRFlowable(width="100%", thickness=1, color=colors.HexColor("#D3D3D3"), spaceAfter=12,
-                                   spaceBefore=6))
-
-            if vini_trovati_totali == 0:
-                elements.append(
-                    Paragraph("Nessun vino trovato negli archivi presi in considerazione.", styles['Normal']))
-
-            doc.build(elements)
-            print(f"PDF personalizzato per colore creato con successo in: {file_pdf}")
-
-        except Exception as e:
-            print(f"Errore nella generazione del PDF: {e}")
+                currentActivity = PythonActivity.mActivity
+                currentActivity.startActivity(intent)
+            except Exception as e:
+                print(f"Impossibile aprire il file su Android: {e}")
+        else:
+            import webbrowser
+            webbrowser.open('file://' + os.path.realpath(percorso_file))
 
     def mostra_menu_importa(self):
         """Mostra il popup iniziale per l'importazione dei dati."""
