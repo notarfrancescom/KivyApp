@@ -20,7 +20,7 @@ package.domain = com.vino.kivyapp
 source.dir = .
 
 # Include tutto ciò che è py, kv e tutta la cartella materiale
-source.include_exts = py, png, jpg, kv, atlas, ttf
+source.include_exts = py, png, jpg, kv, atlas, ttf, json
 source.include_dirs = materiale
 
 #--------------------------------------------------------------
@@ -41,7 +41,7 @@ version = 0.1
 #requirements = python3,kivy==2.3.1,filetype,tinydb
 #requirements = python3, kivy==2.3.0, sdl2, sdl2_image, sdl2_ttf, filetype, tinydb
 #requirements = python3==3.11.5,kivy,tinydb,reportlab,pillow,setuptools
-requirements = python3==3.11.5,hostpython3==3.11.5,kivy,tinydb,pillow,setuptools
+requirements = python3==3.11.5,hostpython3==3.11.5,kivy,tinydb,reportlab,pillow,setuptools
 
 # Versione Python (allineata al workflow)
 python.version = 3.11
