@@ -44,33 +44,24 @@ COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
 def get_export_folder():
     """
-    Restituisce il percorso sicuro per l'esportazione:
-    - Su Android: usa la cartella privata dell'app (accessibile e compatibile con tutte le versioni di Android)
-    - Su Desktop: usa la cartella locale 'esportazioni'
+    Restituisce il percorso adatto per l'esportazione:
+    - Su Android: usa la cartella pubblica 'Download/WineApp'
+    - Su Desktop (Linux/Windows/macOS): usa la cartella locale 'esportazioni'
     """
     if platform == 'android':
         try:
-            from jnius import autoclass
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            context = PythonActivity.mActivity
+            from android.storage import primary_external_storage_path
+            base_dir = primary_external_storage_path()
+        except ImportError:
+            # Fallback se non si riesce a importare la libreria android
+            base_dir = "/sdcard"
 
-            # Utilizza la directory esterna privata dell'app (es. /storage/emulated/0/Android/data/tuo.pacchetto/files)
-            ext_dir = context.getExternalFilesDir(None)
-            if ext_dir:
-                target_dir = ext_dir.getAbsolutePath()
-            else:
-                target_dir = context.getFilesDir().getAbsolutePath()
-        except Exception as e:
-            print(f"DEBUG: Errore recupero percorso Android: {e}")
-            target_dir = os.getcwd()
+        target_dir = os.path.join(base_dir, 'Download', 'WineApp')
     else:
-        target_dir = os.path.join(os.getcwd(), "esportazioni")
+        target_dir = "esportazioni"
 
     if not os.path.exists(target_dir):
-        try:
-            os.makedirs(target_dir, exist_ok=True)
-        except Exception as e:
-            print(f"DEBUG: Impossibile creare la cartella: {e}")
+        os.makedirs(target_dir)
 
     return target_dir
 
