@@ -35,7 +35,7 @@ source.include_patterns = ./*,materiale/*
 #---------------------------------------------------------------
 
 # Versione dell'app
-version = 0.1
+version = 0.2
 
 # Requisiti (aggiungi qui eventuali librerie extra)
 #requirements = python3,kivy==2.3.1,filetype,tinydb
@@ -53,6 +53,9 @@ fullscreen = 1
 
 # Permessi Android
 android.permissions = android.permission.INTERNET
+
+# Configurazione del FileProvider per l'apertura sicura dei file esportati
+android.fileprovider_authority = com.vino.kivyapp.winetastingapp.fileprovider
 
 # Target API
 android.api = 34
