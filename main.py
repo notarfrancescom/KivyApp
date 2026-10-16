@@ -34,9 +34,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-Window.size = (360, 640)
+#Window.size = (360, 640)
 #Window.size = (1080, 1920)
-Window.resizable = False
+#Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -44,24 +44,33 @@ COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
 def get_export_folder():
     """
-    Restituisce il percorso adatto per l'esportazione:
-    - Su Android: usa la cartella pubblica 'Download/WineApp'
-    - Su Desktop (Linux/Windows/macOS): usa la cartella locale 'esportazioni'
+    Restituisce il percorso sicuro per l'esportazione:
+    - Su Android: usa la cartella privata dell'app (accessibile e compatibile con tutte le versioni di Android)
+    - Su Desktop: usa la cartella locale 'esportazioni'
     """
     if platform == 'android':
         try:
-            from android.storage import primary_external_storage_path
-            base_dir = primary_external_storage_path()
-        except ImportError:
-            # Fallback se non si riesce a importare la libreria android
-            base_dir = "/sdcard"
+            from jnius import autoclass
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            context = PythonActivity.mActivity
 
-        target_dir = os.path.join(base_dir, 'Download', 'WineApp')
+            # Utilizza la directory esterna privata dell'app (es. /storage/emulated/0/Android/data/tuo.pacchetto/files)
+            ext_dir = context.getExternalFilesDir(None)
+            if ext_dir:
+                target_dir = ext_dir.getAbsolutePath()
+            else:
+                target_dir = context.getFilesDir().getAbsolutePath()
+        except Exception as e:
+            print(f"DEBUG: Errore recupero percorso Android: {e}")
+            target_dir = os.getcwd()
     else:
-        target_dir = "esportazioni"
+        target_dir = os.path.join(os.getcwd(), "esportazioni")
 
     if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except Exception as e:
+            print(f"DEBUG: Impossibile creare la cartella: {e}")
 
     return target_dir
 
@@ -80,6 +89,8 @@ def formatta_data(raw_date):
     except Exception:
         return str(raw_date)
 
+class ImageButton(ButtonBehavior, Image):
+    pass
 
 # Piccola classe helper per pulsanti-immagine proporzionati
 class ArrowButton(ButtonBehavior, Image):
@@ -1895,37 +1906,42 @@ class WineApp(App):
     from kivy.metrics import dp
 
     def show_export_import_submenu(self, button_instance):
-        """Mostra unicamente le due frecce sovrapposte, azzerando sfondi e margini."""
+        """Mostra le frecce leggermente più grandi e ben visibili."""
 
         if hasattr(self, 'current_dropdown') and self.current_dropdown:
             self.current_dropdown.dismiss()
 
         content_layout = BoxLayout(
             orientation='vertical',
-            spacing=dp(4),
-            padding=[0, 0, 0, 0]
+            spacing=dp(12),  # Spazio leggermente aumentato tra i due pulsanti
+            padding=[0, 0, 0, 0],
+            size_hint=(None, None),
+            size=(dp(240), dp(170))  # Contenitore ingrandito
         )
 
         items = [
-            ('materiale/menu_esporta_round_testo_noBG.png', 'materiale/menu_esporta_cliccato_round_testo_noBG.png', lambda: self.esporta_dati()),
-            ('materiale/menu_importa_round_testo_noBG.png', 'materiale/menu_importa_cliccato_round_testo_noBG.png', lambda: self.mostra_menu_importa())
+            ('materiale/menu_esporta_round_testo_noBG.png', lambda: self.esporta_dati()),
+            ('materiale/menu_importa_round_testo_noBG.png', lambda: self.mostra_menu_importa())
         ]
 
-        for img_normal, img_down, action in items:
-            btn = ArrowButton(
-                img_normal=img_normal,
-                img_down=img_down,
-                action=action,
-                on_click_callback=lambda: view.dismiss()
+        for img_path, action in items:
+            # Pulsanti leggermente più grandi (230x78 dp) mantenendo la proporzione nativa
+            btn = ImageButton(
+                source=img_path,
+                size_hint=(None, None),
+                size=(dp(230), dp(78)),  # <-- LEGGERMENTE PIÙ GRANDI
+                allow_stretch=True,
+                keep_ratio=True,
+                on_release=lambda instance, act=action: [view.dismiss(), act()]
             )
             content_layout.add_widget(btn)
 
-        # ModalView trasparente (background_color trasparente e senza bordo)
+        # ModalView adattato alla nuova dimensione dei bottoni
         view = ModalView(
             size_hint=(None, None),
-            size=(dp(70), dp(68)),
+            size=(dp(255), dp(185)),  # <-- Adattato di conseguenza
             background='',
-            background_color=(0, 0, 0, 0),
+            background_color=(0, 0, 0, 0),  # Trasparente
             auto_dismiss=True
         )
 
@@ -2237,10 +2253,13 @@ class WineApp(App):
         view.add_widget(content)
         view.open()
 
-
     def esporta_file_db(self):
-        """Esporta un backup dei database dell'applicazione nella cartella di destinazione adatta (Download su Android, esportazioni su Desktop)."""
+        """Esporta un backup dei database dell'applicazione con data e ora nel nome."""
         CARTELLA_DEST = get_export_folder()
+
+        # Generiamo il timestamp corrente (es. 2026-10-16_12-30-00)
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         files_db = [
             "red_wine_database.json",
@@ -2252,10 +2271,12 @@ class WineApp(App):
         copiati = 0
         for f in files_db:
             if os.path.exists(f):
-                shutil.copy(f, os.path.join(CARTELLA_DEST, f"backup_{f}"))
+                # Il nome del file di backup includerà la data e l'ora
+                nome_backup = f"backup_{timestamp}_{f}"
+                shutil.copy(f, os.path.join(CARTELLA_DEST, nome_backup))
                 copiati += 1
 
-        print(f"Esportati {copiati} file di database nella cartella '{CARTELLA_DEST}'")
+        print(f"Esportati {copiati} file di database nella cartella '{CARTELLA_DEST}' con data {timestamp}")
 
     def carica_vini_da_file(self, nome_file):
         """Cerca il file JSON nella cartella di progetto e carica i dati."""
@@ -2321,6 +2342,10 @@ class WineApp(App):
 
         elementi_da_elaborare = config_categorie.get(categoria, [])
 
+        # Generiamo il timestamp corrente per il report HTML
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
         from tinydb import TinyDB
         for titolo_sezione, filename, tipo_vino in elementi_da_elaborare:
             if os.path.exists(filename):
@@ -2351,7 +2376,7 @@ class WineApp(App):
 
                     dati_vini.append((titolo_sezione, vini_ordinati))
 
-        nome_file = f"report_vini_{categoria}.html"
+        nome_file = f"report_vini_{categoria}_{timestamp}.html"
         percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
 
         # Costruzione dell'HTML con il dettaglio completo delle schede
