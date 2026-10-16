@@ -34,9 +34,9 @@ from kivy.uix.spinner import Spinner
 
 # Imposta la dimensione fissa della finestra
 # Queste linee VANNO RIMOSSE (o commentate) prima di creare l'APK per usare la risoluzione nativa.
-#Window.size = (360, 640)
+Window.size = (360, 640)
 #Window.size = (1080, 1920)
-#Window.resizable = False
+Window.resizable = False
 
 # Colore di default per i bottoni deselezionati
 COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
@@ -44,24 +44,33 @@ COLOR_DESELECTED_APP = (0.9, 0.9, 0.9, 0.7)
 
 def get_export_folder():
     """
-    Restituisce il percorso adatto per l'esportazione:
-    - Su Android: usa la cartella pubblica 'Download/WineApp'
-    - Su Desktop (Linux/Windows/macOS): usa la cartella locale 'esportazioni'
+    Restituisce il percorso sicuro per l'esportazione:
+    - Su Android: usa la cartella privata dell'app (accessibile e compatibile con tutte le versioni di Android)
+    - Su Desktop: usa la cartella locale 'esportazioni'
     """
     if platform == 'android':
         try:
-            from android.storage import primary_external_storage_path
-            base_dir = primary_external_storage_path()
-        except ImportError:
-            # Fallback se non si riesce a importare la libreria android
-            base_dir = "/sdcard"
+            from jnius import autoclass
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            context = PythonActivity.mActivity
 
-        target_dir = os.path.join(base_dir, 'Download', 'WineApp')
+            # Utilizza la directory esterna privata dell'app (es. /storage/emulated/0/Android/data/tuo.pacchetto/files)
+            ext_dir = context.getExternalFilesDir(None)
+            if ext_dir:
+                target_dir = ext_dir.getAbsolutePath()
+            else:
+                target_dir = context.getFilesDir().getAbsolutePath()
+        except Exception as e:
+            print(f"DEBUG: Errore recupero percorso Android: {e}")
+            target_dir = os.getcwd()
     else:
-        target_dir = "esportazioni"
+        target_dir = os.path.join(os.getcwd(), "esportazioni")
 
     if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except Exception as e:
+            print(f"DEBUG: Impossibile creare la cartella: {e}")
 
     return target_dir
 
