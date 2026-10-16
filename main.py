@@ -2342,7 +2342,7 @@ class WineApp(App):
 
         elementi_da_elaborare = config_categorie.get(categoria, [])
 
-        # Generiamo il timestamp corrente per il report HTML
+        # Generiamo il timestamp corrente per il report HTML (DEFINITO QUI CORRETTAMENTE)
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -2377,7 +2377,6 @@ class WineApp(App):
                     dati_vini.append((titolo_sezione, vini_ordinati))
 
         nome_file = f"report_vini_{categoria}_{timestamp}.html"
-        percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
 
         # Costruzione dell'HTML con il dettaglio completo delle schede
         righe_html = f"""<!DOCTYPE html>
@@ -2529,10 +2528,54 @@ class WineApp(App):
     </html>
     """
 
-        with open(percorso_completo, "w", encoding="utf-8") as f:
-            f.write(righe_html)
+        # Gestione differenziata tra Android (salvataggio nativo) e PC (salvataggio diretto)
+        from kivy.utils import platform
+        if platform == 'android':
+            try:
+                from jnius import autoclass
+                from android import mActivity
 
-        self.apri_file_esternamente(percorso_completo)
+                Intent = autoclass('android.content.Intent')
+                self._contenuto_in_attesa = righe_html
+
+                intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.setType("text/html")
+                intent.putExtra(Intent.EXTRA_TITLE, nome_file)
+
+                requestCode = 9001
+                mActivity.startActivityForResult(intent, requestCode)
+                mActivity.addActivityResultListener(self._risultato_salvataggio_android)
+                print("Finestra di salvataggio nativo aperta su Android.")
+            except Exception as e:
+                print(f"Errore nell'avvio del salvataggio nativo su Android: {e}")
+        else:
+            # Su PC salva direttamente nella cartella di esportazione
+            percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
+            with open(percorso_completo, "w", encoding="utf-8") as f:
+                f.write(righe_html)
+            print(f"File salvato sul PC in: {percorso_completo}")
+            # Su PC apre direttamente il file col browser
+            import webbrowser
+            webbrowser.open('file://' + os.path.realpath(percorso_completo))
+
+    def _risultato_salvataggio_android(self, requestCode, resultCode, intent):
+        """Intercetta il file scelto dall'utente e completa il salvataggio."""
+        if requestCode == 9001:
+            from android import mActivity
+            # Rimuoviamo il listener per evitare duplicati
+            mActivity.removeActivityResultListener(self._risultato_salvataggio_android)
+
+            if resultCode == -1 and intent is not None:  # -1 corrisponde a Activity.RESULT_OK
+                uri = intent.getData()
+                if uri is not None:
+                    uri_string = uri.toString()
+                    contenuto = getattr(self, '_contenuto_in_attesa', "")
+                    self.scrivi_file_android(uri_string, contenuto)
+            else:
+                print("Salvataggio annullato dall'utente.")
+            return True
+        return False
 
     def apri_file_esternamente(self, percorso_file):
         from kivy.utils import platform
@@ -2564,6 +2607,32 @@ class WineApp(App):
         else:
             import webbrowser
             webbrowser.open('file://' + os.path.realpath(percorso_file))
+
+    def scrivi_file_android(self, uri_string, contenuto):
+        """Scrive il contenuto nel file selezionato dall'utente tramite Android SAF."""
+        try:
+            from jnius import autoclass
+            from android import mActivity
+
+            Uri = autoclass('android.net.Uri')
+            String = autoclass('java.lang.String')
+
+            context = mActivity.getApplicationContext()
+            content_resolver = context.getContentResolver()
+
+            uri = Uri.parse(uri_string)
+            # Apre uno stream di scrittura in modalità "w" (tronca/scrive da zero)
+            pfd = content_resolver.openFileDescriptor(uri, "w")
+            fos = autoclass('java.io.FileOutputStream')(pfd.getFileDescriptor())
+
+            # Converte il contenuto in bytes e lo scrive nello stream
+            byte_data = contenuto.encode('utf-8')
+            fos.write(byte_data)
+            fos.close()
+            pfd.close()
+            print("File salvato con successo tramite selettore nativo Android!")
+        except Exception as e:
+            print(f"Errore durante la scrittura del file su Android: {e}")
 
     def mostra_menu_importa(self):
         """Mostra il popup iniziale per l'importazione dei dati."""
