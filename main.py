@@ -2541,18 +2541,24 @@ class WineApp(App):
                 from jnius import autoclass
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
-                Uri = autoclass('android.net.Uri')
                 File = autoclass('java.io.File')
+                FileProvider = autoclass('androidx.core.content.FileProvider')
 
                 file_obj = File(percorso_file)
-                uri = Uri.fromFile(file_obj)
+                currentActivity = PythonActivity.mActivity
+                context = currentActivity.getApplicationContext()
+
+                # Autorità del FileProvider basata sul package name dell'app
+                authority = f"{context.getPackageName()}.fileprovider"
+                uri = FileProvider.getUriForFile(context, authority, file_obj)
 
                 intent = Intent(Intent.ACTION_VIEW)
                 intent.setDataAndType(uri, "text/html")
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-                currentActivity = PythonActivity.mActivity
                 currentActivity.startActivity(intent)
+                print("File HTML aperto con successo tramite FileProvider.")
             except Exception as e:
                 print(f"Impossibile aprire il file su Android: {e}")
         else:
@@ -2599,8 +2605,8 @@ class WineApp(App):
         """Apre un FileChooser per selezionare il file JSON o DB da importare."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
-        # Inizia a cercare nella cartella 'esportazioni' o nella directory corrente
-        path_iniziale = os.path.abspath("esportazioni") if os.path.exists("esportazioni") else os.getcwd()
+        # Usa la cartella di esportazione corretta (esterna su Android, locale su Desktop)
+        path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
