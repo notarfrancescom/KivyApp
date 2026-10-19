@@ -2548,6 +2548,8 @@ class WineApp(App):
 
                 intent = Intent(Intent.ACTION_SEND)
                 intent.setType("text/html")
+
+                # Passiamo l'URI usando l'oggetto Parcelable corretto per gli stream
                 intent.putExtra(Intent.EXTRA_STREAM, uri)
                 intent.putExtra(Intent.EXTRA_SUBJECT, f"Report Degustazione Vini - {categoria.capitalize()}")
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
