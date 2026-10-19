@@ -2542,6 +2542,7 @@ class WineApp(App):
                 Intent = autoclass('android.content.Intent')
                 File = autoclass('java.io.File')
                 Uri = autoclass('android.net.Uri')
+                String = autoclass('java.lang.String')
 
                 file_obj = File(percorso_completo)
                 uri = Uri.fromFile(file_obj)
@@ -2549,14 +2550,16 @@ class WineApp(App):
                 intent = Intent(Intent.ACTION_SEND)
                 intent.setType("text/html")
 
-                # Eseguiamo il cast esplicito a Parcelable per soddisfare PyJNIus e Android
                 parcelable_uri = cast('android.os.Parcelable', uri)
 
                 intent.putExtra(Intent.EXTRA_STREAM, parcelable_uri)
-                intent.putExtra(Intent.EXTRA_SUBJECT, f"Report Degustazione Vini - {categoria.capitalize()}")
+                intent.putExtra(Intent.EXTRA_SUBJECT, String(f"Report Degustazione Vini - {categoria.capitalize()}"))
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                chooser = Intent.createChooser(intent, "Condividi Report HTML")
+                # Usiamo java.lang.String come CharSequence per soddisfare la firma Java
+                title = String("Condividi Report HTML")
+                chooser = Intent.createChooser(intent, title)
+
                 mActivity.startActivity(chooser)
                 print("Finestra di condivisione Android aperta con successo.")
             except Exception as e:
