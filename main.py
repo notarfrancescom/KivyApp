@@ -2536,7 +2536,7 @@ class WineApp(App):
         from kivy.utils import platform
         if platform == 'android':
             try:
-                from jnius import autoclass
+                from jnius import autoclass, cast
                 from android import mActivity
 
                 Intent = autoclass('android.content.Intent')
@@ -2549,8 +2549,10 @@ class WineApp(App):
                 intent = Intent(Intent.ACTION_SEND)
                 intent.setType("text/html")
 
-                # Passiamo l'URI usando l'oggetto Parcelable corretto per gli stream
-                intent.putExtra(Intent.EXTRA_STREAM, uri)
+                # Eseguiamo il cast esplicito a Parcelable per soddisfare PyJNIus e Android
+                parcelable_uri = cast('android.os.Parcelable', uri)
+
+                intent.putExtra(Intent.EXTRA_STREAM, parcelable_uri)
                 intent.putExtra(Intent.EXTRA_SUBJECT, f"Report Degustazione Vini - {categoria.capitalize()}")
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
