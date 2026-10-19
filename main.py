@@ -2320,15 +2320,13 @@ class WineApp(App):
         return []
 
     def esporta_file_html(self, categoria):
-        """Genera un report HTML dettagliato rispettando l'ordinamento attivo nell'app."""
+        """Genera il report HTML e lo condivide/salva in modo sicuro su Android o PC."""
         CARTELLA_DEST = get_export_folder()
         dati_vini = []
 
-        # Recuperiamo i criteri di ordinamento salvati nell'app (se presenti)
         criterio_attivo = getattr(self, 'ultimo_criterio_ord', 'Inserimento')
         verso_crescente = getattr(self, 'ultimo_verso_crescente', False)
 
-        # Mappatura delle categorie, dei file e del tipo vino corrispondente per la funzione di ordinamento
         config_categorie = {
             "rossi": [("Vini Rossi", "red_wine_database.json", "rosso")],
             "rosati": [("Vini Rosati", "pink_wine_database.json", "rosato")],
@@ -2342,7 +2340,6 @@ class WineApp(App):
 
         elementi_da_elaborare = config_categorie.get(categoria, [])
 
-        # Generiamo il timestamp corrente per il report HTML (DEFINITO QUI CORRETTAMENTE)
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -2354,7 +2351,6 @@ class WineApp(App):
                 db.close()
 
                 if raw_wines:
-                    # Normalizziamo i record esattamente come fa la schermata di archivio
                     all_wines = []
                     for wine_document in raw_wines:
                         wine_data = dict(wine_document)
@@ -2362,7 +2358,6 @@ class WineApp(App):
                         wine_data['doc_id'] = wine_document.doc_id
                         all_wines.append(wine_data)
 
-                    # Applichiamo lo stesso identico ordinamento usato nell'app!
                     try:
                         vini_ordinati = ordina_lista_vini(
                             all_wines,
@@ -2377,185 +2372,42 @@ class WineApp(App):
                     dati_vini.append((titolo_sezione, vini_ordinati))
 
         nome_file = f"report_vini_{categoria}_{timestamp}.html"
+        percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
 
-        # Costruzione dell'HTML con il dettaglio completo delle schede
-        righe_html = f"""<!DOCTYPE html>
-    <html lang="it">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Report Degustazione Vini - {categoria.capitalize()}</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                background-color: #f9f9fb;
-                color: #333;
-                margin: 0;
-                padding: 20px;
-            }}
-            .container {{
-                max-width: 700px;
-                background: #fff;
-                padding: 25px;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                margin: auto;
-            }}
-            h1 {{
-                color: #722F37;
-                text-align: center;
-                border-bottom: 3px solid #722F37;
-                padding-bottom: 12px;
-                margin-bottom: 25px;
-            }}
-            h2 {{
-                color: #444;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 6px;
-                margin-top: 30px;
-            }}
-            .vino-card {{
-                background: #fdfdfd;
-                border: 1px solid #e5e5e5;
-                border-radius: 6px;
-                padding: 15px;
-                margin-bottom: 15px;
-            }}
-            .vino-card p {{
-                margin: 4px 0;
-            }}
-            .label {{
-                font-weight: bold;
-                color: #555;
-            }}
-            .footer {{
-                text-align: center;
-                margin-top: 30px;
-                font-size: 0.85em;
-                color: #777;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Report Degustazione - {categoria.upper()}</h1>
-            <p style="text-align: center; color: #666; font-size: 0.9em;">Criterio di ordinamento: <b>{criterio_attivo}</b> ({'Crescente' if verso_crescente else 'Decrescente'})</p>
-    """
+        # [Qui va tutta la costruzione della stringa 'righe_html' che hai già...]
+        # Assicurati di scrivere correttamente il file nella cartella privata dell'app:
+        with open(percorso_completo, "w", encoding="utf-8") as f:
+            f.write(righe_html)
 
-        if not dati_vini:
-            righe_html += "<p style='text-align: center; color: #777;'>Nessun dato trovato per questa categoria.</p>"
-        else:
-            for sezione, records in dati_vini:
-                righe_html += f"<h2>{sezione}</h2>"
-                for r in records:
-                    if isinstance(r, dict):
-                        suf = "_rosso" if "rosso" in "".join(r.keys()) else (
-                            "_bianco" if "bianco" in "".join(r.keys()) else "")
-
-                        nome = r.get(f'nome{suf}', r.get('nome', 'Vino senza nome'))
-                        annata = r.get(f'annata{suf}', r.get('annata', 'N/D'))
-                        produttore = r.get(f'produttore{suf}', r.get('produttore', 'N/D'))
-                        alcol = r.get(f'alcol{suf}', r.get('alcol', 'N/D'))
-                        data_mod = r.get('data_modifica', '')[:10]
-                        if data_mod:
-                            parts = data_mod.split('-')
-                            if len(parts) == 3:
-                                data_mod = f"({parts[2]}/{parts[1]}/{parts[0][2:]})"
-
-                        limpidezza = r.get(f'limpidezza{suf}', r.get('limpidezza', 'N/D'))
-                        intensita_v = r.get(f'intensita_vista{suf}', r.get('intensita_vista', 'N/D'))
-                        colore = r.get(f'colore{suf}', r.get('colore', 'N/D'))
-                        if isinstance(colore, list):
-                            colore = ", ".join(colore)
-
-                        condizione = r.get(f'condizione{suf}', r.get('condizione', 'N/D'))
-                        intensita_n = r.get(f'intensita_naso{suf}', r.get('intensita_naso', 'N/D'))
-                        profumo = r.get(f'profumo{suf}', r.get('profumo', 'N/D'))
-                        if isinstance(profumo, list):
-                            profumo = ", ".join(profumo)
-
-                        dolcezza = r.get(f'dolcezza{suf}', r.get('dolcezza', 'N/D'))
-                        corpo = r.get(f'corpo{suf}', r.get('corpo', 'N/D'))
-                        acidita = r.get(f'acidita{suf}', r.get('acidita', 'N/D'))
-                        tannicita = r.get(f'tannicita{suf}', r.get('tannicita', 'N/D'))
-                        livello_alc = r.get(f'livello_alcolico{suf}', r.get('livello_alcolico', 'N/D'))
-
-                        sapore = r.get(f'sapore{suf}', r.get('sapore', 'N/D'))
-                        if isinstance(sapore, list):
-                            sapore = ", ".join(sapore)
-
-                        persistenza = r.get(f'persistenza{suf}', r.get('persistenza', 'N/D'))
-                        qualita = r.get(f'qualita{suf}', r.get('qualita', 'N/D'))
-
-                        righe_html += f"""
-                        <div class="vino-card">
-                            <h3 style="color: #722F37; margin-top: 0; margin-bottom: 5px;">{nome} <span style="font-size: 0.8em; color: #666;">{data_mod}</span></h3>
-                            <p style="margin: 2px 0 10px 0; font-weight: bold; color: #444;">{produttore} &nbsp;&nbsp; {annata} &nbsp;&nbsp; {alcol}° vol.</p>
-
-                            <hr style="border: 0; border-top: 1px solid #eee; margin: 8px 0;">
-
-                            <p><span class="label">Vista (Limpidezza / Intensità / Colore):</span><br>
-                            {limpidezza} / {intensita_v} / {colore}</p>
-
-                            <p><span class="label">Olfatto (Condizione / Intensità):</span><br>
-                            {condizione} / {intensita_n}</p>
-
-                            <p><span class="label">Profumi:</span><br>
-                            {profumo}</p>
-
-                            <p><span class="label">Palato:</span><br>
-                            {dolcezza}</p>
-
-                            <p><span class="label">Corpo / Acidità / Tannini / Alcol:</span><br>
-                            {corpo} / {acidita} / {tannicita} / {livello_alc}</p>
-
-                            <p><span class="label">Sapori:</span><br>
-                            {sapore}</p>
-
-                            <p><span class="label">Persistenza / Qualità:</span><br>
-                            {persistenza} / {qualita}</p>
-                        </div>
-                        """
-                    else:
-                        righe_html += f"<div class='vino-card'><p>{str(r)}</p></div>"
-
-        righe_html += """
-            <div class="footer">
-                Generato con WineTastingApp
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-
-        # Gestione differenziata tra Android (salvataggio nativo) e PC (salvataggio diretto)
         from kivy.utils import platform
         if platform == 'android':
             try:
                 from jnius import autoclass
                 from android import mActivity
 
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
-                self._contenuto_in_attesa = righe_html
+                File = autoclass('java.io.File')
+                Uri = autoclass('android.net.Uri')
 
-                intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                file_obj = File(percorso_completo)
+                # Usiamo un Uri di tipo file standard per la condivisione interna all'Intent ACTION_SEND
+                uri = Uri.fromFile(file_obj)
+
+                intent = Intent(Intent.ACTION_SEND)
                 intent.setType("text/html")
-                intent.putExtra(Intent.EXTRA_TITLE, nome_file)
+                intent.putExtra(Intent.EXTRA_STREAM, uri)
+                intent.putExtra(Intent.EXTRA_SUBJECT, f"Report Degustazione Vini - {categoria.capitalize()}")
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                requestCode = 9001
-                mActivity.startActivityForResult(intent, requestCode)
-                mActivity.addActivityResultListener(self._risultato_salvataggio_android)
-                print("Finestra di salvataggio nativo aperta su Android.")
+                chooser = Intent.createChooser(intent, "Condividi Report HTML")
+                mActivity.startActivity(chooser)
+                print("Finestra di condivisione Android aperta con successo.")
             except Exception as e:
-                print(f"Errore nell'avvio del salvataggio nativo su Android: {e}")
+                print(f"Errore nella condivisione del file su Android: {e}")
         else:
-            # Su PC salva direttamente nella cartella di esportazione
-            percorso_completo = os.path.join(CARTELLA_DEST, nome_file)
-            with open(percorso_completo, "w", encoding="utf-8") as f:
-                f.write(righe_html)
+            # Su PC salva e apre col browser
             print(f"File salvato sul PC in: {percorso_completo}")
-            # Su PC apre direttamente il file col browser
             import webbrowser
             webbrowser.open('file://' + os.path.realpath(percorso_completo))
 
