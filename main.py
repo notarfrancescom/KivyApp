@@ -2646,25 +2646,59 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser per selezionare il file JSON o DB da importare partendo dalla cartella Download o Backup."""
-        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
-
+        """Apre il file chooser nativo su Android o il Popup Kivy su PC per selezionare il DB/JSON."""
         from kivy.utils import platform
+
         if platform == 'android':
             try:
-                from android.storage import primary_external_storage_path
-                # Puntiamo direttamente alla cartella Download del telefono
-                path_iniziale = os.path.join(primary_external_storage_path(), 'Download')
-                if not os.path.exists(path_iniziale):
-                    path_iniziale = get_export_folder()
-            except Exception:
-                path_iniziale = get_export_folder()
-        else:
-            path_iniziale = get_export_folder()
+                from jnius import autoclass
+                from android import mActivity
+
+                Intent = autoclass('android.content.Intent')
+                String = autoclass('java.lang.String')
+
+                intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.setType("*/*")  # O "application/json"
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+
+                title = String("Seleziona File di Backup (.json)")
+                chooser = Intent.createChooser(intent, title)
+
+                # Registriamo il listener per la risposta del selettore
+                def on_activity_result(request_code, result_code, intent_data):
+                    if request_code == 9002:
+                        mActivity.removeActivityResultListener(self._import_listener)
+                        # RESULT_OK in Android è -1
+                        if result_code == -1 and intent_data is not None:
+                            uri = intent_data.getData()
+                            if uri is not None:
+                                # Otteniamo il percorso reale dal file o lo copiamo per l'elaborazione
+                                path = self._ottieni_percorso_da_uri(uri)
+                                if path:
+                                    from kivy.clock import mainthread
+                                    @mainthread
+                                    def avvia_prep():
+                                        self._prepara_importazione([path], None)
+
+                                    avvia_prep()
+
+                self._import_listener = on_activity_result
+                mActivity.addActivityResultListener(self._import_listener)
+                mActivity.startActivityForResult(chooser, 9002)
+                print("Aperto selettore file nativo Android.")
+                return
+            except Exception as e:
+                print(f"Errore nell'apertura del selettore nativo Android: {e}, uso fallback Kivy FileChooser.")
+
+        # --- FALLBACK PER PC O IN CASO DI ERRORE ---
+        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+
+        path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
-            filters=['*.*'],  # Mostriamo tutti i file così puoi entrare nelle cartelle o vedere i json liberamente
+            filters=[
+                lambda folder, filename: filename.endswith('.json') or os.path.isdir(os.path.join(folder, filename))],
             size_hint=(1, 1)
         )
         box.add_widget(file_chooser)
@@ -2686,18 +2720,46 @@ class WineApp(App):
 
         btn_annulla.bind(on_release=popup.dismiss)
 
-        # Validazione per accettare solo file .json o .db durante l'importazione
         def conferma_selezione(instance):
             if file_chooser.selection:
                 file_scelto = file_chooser.selection[0]
-                if file_scelto.endswith(('.json', '.db')):
+                if file_scelto.endswith('.json'):
                     popup.dismiss()
                     self._prepara_importazione([file_scelto], popup)
-                else:
-                    print("Seleziona un file valido in formato .json o .db")
 
         btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
+
+    def _ottieni_percorso_da_uri(self, uri):
+        """Helper per convertire un URI di Android in un percorso file temporaneo leggibile da Python."""
+        try:
+            from android import mActivity
+            import shutil
+
+            cr = mActivity.getContentResolver()
+            input_stream = cr.openInputStream(uri)
+
+            # Salviamo una copia temporanea del file scelto nella cartella interna dell'app per poterlo leggere con TinyDB
+            temp_path = os.path.join(get_export_folder(), "temp_import.json")
+
+            FileOutputStream = autoclass('java.io.FileOutputStream')
+            out_stream = FileOutputStream(temp_path)
+
+            # Buffer di lettura
+            from jnius import ByteArray
+            buffer = ByteArray(1024)
+            while True:
+                bytes_read = input_stream.read(buffer)
+                if bytes_read == -1:
+                    break
+                out_stream.write(buffer, 0, bytes_read)
+
+            input_stream.close()
+            out_stream.close()
+            return temp_path
+        except Exception as e:
+            print(f"Errore nella lettura dell'URI del file: {e}")
+            return None
 
     def _prepara_importazione(self, selezione, popup_file):
         """Verifica il file selezionato e chiede la modalità di importazione."""
