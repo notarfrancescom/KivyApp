@@ -2254,10 +2254,8 @@ class WineApp(App):
         view.open()
 
     def esporta_file_db(self):
-        """Esporta un backup dei database dell'applicazione con data e ora nel nome."""
-        CARTELLA_DEST = get_export_folder()
-
-        # Generiamo il timestamp corrente (es. 2026-10-16_12-30-00)
+        """Esporta un backup dei database dell'applicazione con data e ora nel nome nella cartella Download."""
+        # Generiamo il timestamp corrente (es. 2026-10-20_10-30-00)
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -2268,15 +2266,37 @@ class WineApp(App):
             "wine_database.db"
         ]
 
+        # Determiniamo la cartella di destinazione pubblica su Android (Download) o PC
+        from kivy.utils import platform
+        if platform == 'android':
+            try:
+                from android.storage import primary_external_storage_path
+                # Creiamo una cartella dedicata per questo backup dentro Download per tenere tutto in ordine
+                download_dir = os.path.join(primary_external_storage_path(), 'Download', f"WineBackup_{timestamp}")
+                os.makedirs(download_dir, exist_ok=True)
+                cartella_destinazione = download_dir
+            except Exception as e:
+                print(f"Errore accesso cartella Download pubblica: {e}, uso fallback.")
+                cartella_destinazione = get_export_folder()
+        else:
+            cartella_destinazione = get_export_folder()
+            os.makedirs(cartella_destinazione, exist_ok=True)
+
         copiati = 0
         for f in files_db:
             if os.path.exists(f):
-                # Il nome del file di backup includerà la data e l'ora
+                # Copiamo direttamente il file mantenendo il nome originale o aggiungendo il timestamp
                 nome_backup = f"backup_{timestamp}_{f}"
-                shutil.copy(f, os.path.join(CARTELLA_DEST, nome_backup))
+                percorso_dest = os.path.join(cartella_destinazione, nome_backup)
+                shutil.copy(f, percorso_dest)
                 copiati += 1
 
-        print(f"Esportati {copiati} file di database nella cartella '{CARTELLA_DEST}' con data {timestamp}")
+        print(f"Esportati {copiati} file di database in: {cartella_destinazione}")
+
+        # Su PC apriamo anche la cartella di destinazione per comodità
+        if platform != 'android':
+            import webbrowser
+            webbrowser.open(os.path.realpath(cartella_destinazione))
 
     def carica_vini_da_file(self, nome_file):
         """Cerca il file JSON nella cartella di progetto e carica i dati."""
