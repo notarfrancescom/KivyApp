@@ -2646,14 +2646,14 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser per selezionare il file JSON o DB da importare partendo dalla cartella Download su Android."""
+        """Apre un FileChooser per selezionare il file JSON o DB da importare partendo dalla cartella Download o Backup."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
-        # Determiniamo il percorso iniziale in base alla piattaforma
         from kivy.utils import platform
         if platform == 'android':
             try:
                 from android.storage import primary_external_storage_path
+                # Puntiamo direttamente alla cartella Download del telefono
                 path_iniziale = os.path.join(primary_external_storage_path(), 'Download')
                 if not os.path.exists(path_iniziale):
                     path_iniziale = get_export_folder()
@@ -2664,7 +2664,7 @@ class WineApp(App):
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
-            filters=['*.json'],
+            filters=['*.*'],  # Mostriamo tutti i file così puoi entrare nelle cartelle o vedere i json liberamente
             size_hint=(1, 1)
         )
         box.add_widget(file_chooser)
@@ -2676,7 +2676,7 @@ class WineApp(App):
 
         btn_box.add_widget(btn_annulla)
         btn_box.add_widget(btn_conferma)
-        box.box_add = box.add_widget(btn_box)  # Mantenuto il tuo layout originale
+        box.add_widget(btn_box)
 
         popup = Popup(
             title="Seleziona File da Importare",
@@ -2685,8 +2685,18 @@ class WineApp(App):
         )
 
         btn_annulla.bind(on_release=popup.dismiss)
-        btn_conferma.bind(on_release=lambda x: self._prepara_importazione(file_chooser.selection, popup))
 
+        # Validazione per accettare solo file .json o .db durante l'importazione
+        def conferma_selezione(instance):
+            if file_chooser.selection:
+                file_scelto = file_chooser.selection[0]
+                if file_scelto.endswith(('.json', '.db')):
+                    popup.dismiss()
+                    self._prepara_importazione([file_scelto], popup)
+                else:
+                    print("Seleziona un file valido in formato .json o .db")
+
+        btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
 
     def _prepara_importazione(self, selezione, popup_file):
