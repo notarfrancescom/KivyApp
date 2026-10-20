@@ -2528,43 +2528,37 @@ class WineApp(App):
     """
         # --- FINE COSTRUZIONE HTML ---
 
-        # Salvataggio fisico del file nella cartella privata dell'app
-        with open(percorso_completo, "w", encoding="utf-8") as f:
-            f.write(righe_html)
-
-        # Apertura / Condivisione in base alla piattaforma
+        # Salvataggio fisico del file
         from kivy.utils import platform
         if platform == 'android':
             try:
-                from jnius import autoclass, cast
-                from android import mActivity
+                # Salviamo direttamente nella cartella Download pubblica di Android
+                from android.storage import app_storage_path, primary_external_storage_path
+                import shutil
 
-                Intent = autoclass('android.content.Intent')
-                File = autoclass('java.io.File')
-                Uri = autoclass('android.net.Uri')
-                String = autoclass('java.lang.String')
+                # Percorso della cartella Download pubblica del dispositivo
+                download_dir = os.path.join(primary_external_storage_path(), 'Download')
+                if not os.path.exists(download_dir):
+                    os.makedirs(download_dir, exist_ok=True)
 
-                file_obj = File(percorso_completo)
-                uri = Uri.fromFile(file_obj)
+                percorso_pubblico = os.path.join(download_dir, nome_file)
 
-                intent = Intent(Intent.ACTION_SEND)
-                intent.setType("text/html")
+                # Scriviamo prima nel percorso temporaneo e poi copiamo nella cartella Download
+                with open(percorso_completo, "w", encoding="utf-8") as f:
+                    f.write(righe_html)
 
-                parcelable_uri = cast('android.os.Parcelable', uri)
+                shutil.copy(percorso_completo, percorso_pubblico)
+                print(f"Report HTML salvato con successo in Download: {percorso_pubblico}")
 
-                intent.putExtra(Intent.EXTRA_STREAM, parcelable_uri)
-                intent.putExtra(Intent.EXTRA_SUBJECT, String(f"Report Degustazione Vini - {categoria.capitalize()}"))
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-                # Usiamo java.lang.String come CharSequence per soddisfare la firma Java
-                title = String("Condividi Report HTML")
-                chooser = Intent.createChooser(intent, title)
-
-                mActivity.startActivity(chooser)
-                print("Finestra di condivisione Android aperta con successo.")
             except Exception as e:
-                print(f"Errore nella condivisione del file su Android: {e}")
+                print(f"Errore nel salvataggio pubblico su Android: {e}")
+                # Fallback sul percorso privato se la cartella pubblica non è accessibile
+                with open(percorso_completo, "w", encoding="utf-8") as f:
+                    f.write(righe_html)
         else:
+            # Su PC salva normalmente nella cartella di esportazione
+            with open(percorso_completo, "w", encoding="utf-8") as f:
+                f.write(righe_html)
             print(f"File salvato sul PC in: {percorso_completo}")
             import webbrowser
             webbrowser.open('file://' + os.path.realpath(percorso_completo))
