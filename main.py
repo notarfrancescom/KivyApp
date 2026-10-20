@@ -2646,10 +2646,33 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser pulito che punta alla cartella di lavoro dell'app."""
-        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        """Apre il selettore file nativo (compatibile con Android e PC) tramite Plyer."""
+        try:
+            from plyer import filechooser
 
-        # Usiamo la cartella di esportazione/lavoro sicura dell'app
+            # Funzione di callback quando l'utente seleziona un file
+            def seleziona_callback(selection):
+                if selection and len(selection) > 0:
+                    percorso_file = selection[0]
+                    print(f"File selezionato per l'importazione: {percorso_file}")
+                    # Richiama la preparazione dell'importazione sul file scelto
+                    self._prepara_importazione([percorso_file], None)
+
+            # Apre il selettore filtrando i file .json
+            filechooser.open_file(
+                title="Seleziona File di Backup (.json)",
+                filters=[("Backup JSON", "*.json")],
+                multiple=False,
+                on_selection=seleziona_callback
+            )
+        except Exception as e:
+            print(f"Errore nell'apertura del filechooser nativo: {e}")
+            # Fallback nel caso in cui plyer non sia disponibile
+            self._apri_file_chooser_fallback()
+
+    def _apri_file_chooser_fallback(self):
+        """Fallback con il FileChooser interno di Kivy nella cartella di lavoro."""
+        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
         path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
@@ -2660,7 +2683,6 @@ class WineApp(App):
         box.add_widget(file_chooser)
 
         btn_box = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(10))
-
         btn_annulla = Button(text="Annulla", size_hint_x=0.4)
         btn_conferma = Button(text="Importa", size_hint_x=0.6, background_color=(0.25, 0.55, 0.85, 1))
 
