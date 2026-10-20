@@ -2646,11 +2646,21 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser per selezionare il file JSON o DB da importare."""
+        """Apre un FileChooser per selezionare il file JSON o DB da importare partendo dalla cartella Download su Android."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
-        # Usa la cartella di esportazione corretta (esterna su Android, locale su Desktop)
-        path_iniziale = get_export_folder()
+        # Determiniamo il percorso iniziale in base alla piattaforma
+        from kivy.utils import platform
+        if platform == 'android':
+            try:
+                from android.storage import primary_external_storage_path
+                path_iniziale = os.path.join(primary_external_storage_path(), 'Download')
+                if not os.path.exists(path_iniziale):
+                    path_iniziale = get_export_folder()
+            except Exception:
+                path_iniziale = get_export_folder()
+        else:
+            path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
@@ -2666,7 +2676,7 @@ class WineApp(App):
 
         btn_box.add_widget(btn_annulla)
         btn_box.add_widget(btn_conferma)
-        box.add_widget(btn_box)
+        box.box_add = box.add_widget(btn_box)  # Mantenuto il tuo layout originale
 
         popup = Popup(
             title="Seleziona File da Importare",
