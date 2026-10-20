@@ -2646,27 +2646,55 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser robusto basato sulla cartella di lavoro/export dell'app."""
+        """Apre il selettore file nativo su Android o il FileChooser su PC."""
+        from kivy.utils import platform
+
+        if platform == 'android':
+            try:
+                from jnius import autoclass
+                from android import mActivity
+
+                Intent = autoclass('android.content.Intent')
+                intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.setType("application/json")  # Filtra direttamente i file JSON
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+
+                # Usiamo un codice univoco per la richiesta di importazione (es. 9003)
+                CHOOSER_CODE = 9003
+
+                def on_activity_result(requestCode, resultCode, intentData):
+                    if requestCode == CHOOSER_CODE:
+                        try:
+                            # Rimuoviamo il listener per evitare leak
+                            mActivity.removeActivityResultListener(result_listener)
+                        except Exception:
+                            pass
+
+                        # RESULT_OK in Android è -1
+                        if resultCode == -1 and intentData is not None:
+                            uri = intentData.getData()
+                            if uri is not None:
+                                # Copiamo il file selezionato in un percorso locale accessibile
+                                local_path = self._copia_uri_locale(uri)
+                                if local_path:
+                                    from kivy.clock import Clock
+                                    Clock.schedule_once(lambda dt: self._prepara_importazione([local_path], None), 0.1)
+
+                # Salviamo il riferimento al listener sull'istanza della classe
+                self._import_result_listener = on_activity_result
+                mActivity.addActivityResultListener(self._import_result_listener)
+
+                # Avviamo il selettore nativo di Android
+                chooser = Intent.createChooser(intent, autoclass('java.lang.String')("Seleziona file di backup JSON"))
+                mActivity.startActivityForResult(chooser, CHOOSER_CODE)
+                print("Aperto selettore file nativo Android con successo.")
+                return
+            except Exception as e:
+                print(f"Errore nell'avvio del selettore nativo Android: {e}. Uso fallback.")
+
+        # --- FALLBACK PER PC ---
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
-
-        # Usiamo la cartella di esportazione sicura dove l'app ha i permessi completi di lettura/scrittura
         path_iniziale = get_export_folder()
-
-        # Se la cartella non esiste, creala
-        if not os.path.exists(path_iniziale):
-            os.makedirs(path_iniziale, exist_ok=True)
-
-        # Etichetta informativa per l'utente
-        lbl_info = Label(
-            text=f"Seleziona il file .json da importare:\n(Copia il file di backup qui: {path_iniziale})",
-            size_hint_y=None,
-            height=dp(50),
-            font_size='12sp',
-            halign='center',
-            valign='middle'
-        )
-        lbl_info.bind(size=lambda s, w: setattr(s, 'text_size', w))
-        box.add_widget(lbl_info)
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
@@ -2676,7 +2704,6 @@ class WineApp(App):
         box.add_widget(file_chooser)
 
         btn_box = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(10))
-
         btn_annulla = Button(text="Annulla", size_hint_x=0.4)
         btn_conferma = Button(text="Importa", size_hint_x=0.6, background_color=(0.25, 0.55, 0.85, 1))
 
@@ -2685,9 +2712,9 @@ class WineApp(App):
         box.add_widget(btn_box)
 
         popup = Popup(
-            title="Importa Backup Database",
+            title="Seleziona File da Importare",
             content=box,
-            size_hint=(0.9, 0.85)
+            size_hint=(0.9, 0.8)
         )
 
         btn_annulla.bind(on_release=popup.dismiss)
@@ -2700,6 +2727,36 @@ class WineApp(App):
 
         btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
+
+    def _copia_uri_locale(self, uri):
+        """Copia un URI Android in un file temporaneo locale accessibile da Python/TinyDB."""
+        try:
+            from android import mActivity
+            from jnius import autoclass
+
+            cr = mActivity.getContentResolver()
+            input_stream = cr.openInputStream(uri)
+
+            local_path = os.path.join(get_export_folder(), "import_temp.json")
+
+            FileOutputStream = autoclass('java.io.FileOutputStream')
+            out_stream = FileOutputStream(local_path)
+
+            from jnius import ByteArray
+            buffer = ByteArray(1024)
+            while True:
+                bytes_read = input_stream.read(buffer)
+                if bytes_read == -1:
+                    break
+                out_stream.write(buffer, 0, bytes_read)
+
+            input_stream.close()
+            out_stream.close()
+            print(f"File importato copiato localmente in: {local_path}")
+            return local_path
+        except Exception as e:
+            print(f"Errore nella copia locale dell'URI: {e}")
+            return None
 
     def _ottieni_percorso_da_uri(self, uri):
         """Helper per convertire un URI di Android in un percorso file temporaneo leggibile da Python."""
