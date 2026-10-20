@@ -2646,59 +2646,15 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre il file chooser nativo su Android o il Popup Kivy su PC per selezionare il DB/JSON."""
-        from kivy.utils import platform
-
-        if platform == 'android':
-            try:
-                from jnius import autoclass
-                from android import mActivity
-
-                Intent = autoclass('android.content.Intent')
-                String = autoclass('java.lang.String')
-
-                intent = Intent(Intent.ACTION_GET_CONTENT)
-                intent.setType("*/*")  # O "application/json"
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-
-                title = String("Seleziona File di Backup (.json)")
-                chooser = Intent.createChooser(intent, title)
-
-                # Registriamo il listener per la risposta del selettore
-                def on_activity_result(request_code, result_code, intent_data):
-                    if request_code == 9002:
-                        mActivity.removeActivityResultListener(self._import_listener)
-                        # RESULT_OK in Android è -1
-                        if result_code == -1 and intent_data is not None:
-                            uri = intent_data.getData()
-                            if uri is not None:
-                                # Otteniamo il percorso reale dal file o lo copiamo per l'elaborazione
-                                path = self._ottieni_percorso_da_uri(uri)
-                                if path:
-                                    from kivy.clock import mainthread
-                                    @mainthread
-                                    def avvia_prep():
-                                        self._prepara_importazione([path], None)
-
-                                    avvia_prep()
-
-                self._import_listener = on_activity_result
-                mActivity.addActivityResultListener(self._import_listener)
-                mActivity.startActivityForResult(chooser, 9002)
-                print("Aperto selettore file nativo Android.")
-                return
-            except Exception as e:
-                print(f"Errore nell'apertura del selettore nativo Android: {e}, uso fallback Kivy FileChooser.")
-
-        # --- FALLBACK PER PC O IN CASO DI ERRORE ---
+        """Apre un FileChooser pulito che punta alla cartella di lavoro dell'app."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
+        # Usiamo la cartella di esportazione/lavoro sicura dell'app
         path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
-            filters=[
-                lambda folder, filename: filename.endswith('.json') or os.path.isdir(os.path.join(folder, filename))],
+            filters=['*.json'],
             size_hint=(1, 1)
         )
         box.add_widget(file_chooser)
@@ -2723,9 +2679,8 @@ class WineApp(App):
         def conferma_selezione(instance):
             if file_chooser.selection:
                 file_scelto = file_chooser.selection[0]
-                if file_scelto.endswith('.json'):
-                    popup.dismiss()
-                    self._prepara_importazione([file_scelto], popup)
+                popup.dismiss()
+                self._prepara_importazione([file_scelto], popup)
 
         btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
