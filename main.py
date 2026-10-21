@@ -2804,7 +2804,13 @@ class WineApp(App):
             return
 
         percorso_file = selezione[0]
-        popup_file.dismiss()
+
+        # Chiudiamo il popup del file chooser solo se esiste davvero
+        if popup_file is not None:
+            try:
+                popup_file.dismiss()
+            except Exception:
+                pass
 
         # Popup per scegliere la modalità: Unisci vs Sostituisci
         content = BoxLayout(orientation='vertical', spacing=dp(12), padding=dp(15))
