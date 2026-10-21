@@ -2725,7 +2725,7 @@ class WineApp(App):
         popup.open()
 
     def _copia_uri_locale(self, uri):
-        """Legge l'URI esterno tramite ContentResolver e lo copia localmente per l'importazione."""
+        """Copia l'URI esterno in un percorso locale usando i Channels di Java."""
         try:
             from android import mActivity
             from jnius import autoclass
@@ -2735,23 +2735,36 @@ class WineApp(App):
 
             local_path = os.path.join(get_export_folder(), "import_temp.json")
 
+            # Rimuoviamo il file temporaneo precedente se esiste
+            if os.path.exists(local_path):
+                os.remove(local_path)
+
+            # Usiamo FileOutputStream di Java
             FileOutputStream = autoclass('java.io.FileOutputStream')
-            out_stream = FileOutputStream(local_path)
+            output_stream = FileOutputStream(local_path)
 
-            from jnius import ByteArray
-            buffer = ByteArray(1024)
-            while True:
-                bytes_read = input_stream.read(buffer)
-                if bytes_read == -1:
-                    break
-                out_stream.write(buffer, 0, bytes_read)
+            Channels = autoclass('java.nio.channels.Channels')
+            in_channel = Channels.newChannel(input_stream)
+            out_channel = Channels.newChannel(output_stream)
 
+            # Trasferiamo i dati direttamente a livello nativo
+            ByteBuffer = autoclass('java.nio.ByteBuffer')
+            buffer = ByteBuffer.allocate(4096)
+
+            while in_channel.read(buffer) != -1:
+                buffer.flip()
+                out_channel.write(buffer)
+                buffer.clear()
+
+            in_channel.close()
+            out_channel.close()
             input_stream.close()
-            out_stream.close()
-            print(f"File esterno copiato con successo in locale: {local_path}")
+            output_stream.close()
+
+            print(f"File esterno copiato con successo tramite NIO channels in: {local_path}")
             return local_path
         except Exception as e:
-            print(f"Errore nella lettura del file esterno: {e}")
+            print(f"Errore critico nella copia dell'URI con NIO: {e}")
             return None
 
     def _ottieni_percorso_da_uri(self, uri):
