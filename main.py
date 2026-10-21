@@ -2646,7 +2646,7 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser puntando direttamente alla cartella Download pubblica su Android."""
+        """Apre il file chooser puntando alla cartella Download con un filtro permissivo per cartelle e file json."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
         from kivy.utils import platform
@@ -2661,9 +2661,11 @@ class WineApp(App):
         else:
             path_iniziale = get_export_folder()
 
+        # Usiamo una funzione di filtro per mostrare le directory e qualsiasi file o i file .json
         file_chooser = FileChooserListView(
             path=path_iniziale,
-            filters=['*.json'],
+            filters=[
+                lambda folder, filename: filename.endswith('.json') or os.path.isdir(os.path.join(folder, filename))],
             size_hint=(1, 1)
         )
         box.add_widget(file_chooser)
@@ -2677,7 +2679,7 @@ class WineApp(App):
         box.add_widget(btn_box)
 
         popup = Popup(
-            title="Importa Backup Database",
+            title="Seleziona File da Importare",
             content=box,
             size_hint=(0.9, 0.85)
         )
@@ -2687,8 +2689,11 @@ class WineApp(App):
         def conferma_selezione(instance):
             if file_chooser.selection:
                 file_scelto = file_chooser.selection[0]
-                popup.dismiss()
-                self._prepara_importazione([file_scelto], popup)
+                if os.path.isfile(file_scelto):
+                    popup.dismiss()
+                    self._prepara_importazione([file_scelto], popup)
+                else:
+                    print("Seleziona un file valido, non una cartella.")
 
         btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
