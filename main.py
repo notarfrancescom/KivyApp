@@ -2646,50 +2646,49 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre il selettore file nativo di Android (ACTION_OPEN_DOCUMENT) o il fallback su PC."""
+        """Apre il selettore file nativo di Android tramite l'API standard android.activity di p4a."""
         from kivy.utils import platform
 
         if platform == 'android':
             try:
+                import android.activity
                 from jnius import autoclass
                 from android import mActivity
 
                 Intent = autoclass('android.content.Intent')
-                # ACTION_OPEN_DOCUMENT permette di accedere a qualsiasi file persistente sul dispositivo
                 intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.setType("application/json")  # Filtra i file JSON
+                intent.setType("application/json")
 
-                CHOOSER_CODE = 9004
+                CHOOSER_CODE = 9005
 
                 def on_activity_result(requestCode, resultCode, intentData):
                     if requestCode == CHOOSER_CODE:
                         try:
-                            mActivity.removeActivityResultListener(result_listener)
+                            android.activity.unbind(on_activity_result=on_activity_result)
                         except Exception:
                             pass
 
-                        # RESULT_OK è -1
+                        # -1 corrisponde a RESULT_OK in Android
                         if resultCode == -1 and intentData is not None:
                             uri = intentData.getData()
                             if uri is not None:
-                                # Copiamo il file selezionato tramite il ContentResolver in una zona temporanea leggibile
                                 local_path = self._copia_uri_locale(uri)
                                 if local_path:
                                     from kivy.clock import Clock
                                     Clock.schedule_once(lambda dt: self._prepara_importazione([local_path], None), 0.1)
 
-                # Registriamo temporaneamente il listener per catturare il file scelto
-                result_listener = on_activity_result
-                mActivity.addActivityResultListener(result_listener)
+                # Registriamo il callback con il modulo ufficiale di python-for-android
+                android.activity.bind(on_activity_result=on_activity_result)
 
+                # Avviamo l'activity per il risultato
                 mActivity.startActivityForResult(intent, CHOOSER_CODE)
-                print("Selettore file nativo Android aperto correttamente.")
+                print("Selettore file nativo Android avviato con successo.")
                 return
             except Exception as e:
-                print(f"Errore nell'apertura del selettore nativo Android: {e}")
+                print(f"Errore nell'avvio del selettore nativo Android: {e}")
 
-        # --- FALLBACK PER PC (Sviluppo su Ubuntu/Desktop) ---
+        # --- FALLBACK PER PC (Desktop Ubuntu) ---
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
         path_iniziale = get_export_folder()
 
