@@ -2646,26 +2646,56 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre il file chooser puntando alla cartella Download con un filtro permissivo per cartelle e file json."""
-        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
-
+        """Apre il selettore file nativo di Android (ACTION_OPEN_DOCUMENT) o il fallback su PC."""
         from kivy.utils import platform
+
         if platform == 'android':
             try:
-                from android.storage import primary_external_storage_path
-                path_iniziale = os.path.join(primary_external_storage_path(), 'Download')
-                if not os.path.exists(path_iniziale):
-                    path_iniziale = primary_external_storage_path()
-            except Exception:
-                path_iniziale = get_export_folder()
-        else:
-            path_iniziale = get_export_folder()
+                from jnius import autoclass
+                from android import mActivity
 
-        # Usiamo una funzione di filtro per mostrare le directory e qualsiasi file o i file .json
+                Intent = autoclass('android.content.Intent')
+                # ACTION_OPEN_DOCUMENT permette di accedere a qualsiasi file persistente sul dispositivo
+                intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.setType("application/json")  # Filtra i file JSON
+
+                CHOOSER_CODE = 9004
+
+                def on_activity_result(requestCode, resultCode, intentData):
+                    if requestCode == CHOOSER_CODE:
+                        try:
+                            mActivity.removeActivityResultListener(result_listener)
+                        except Exception:
+                            pass
+
+                        # RESULT_OK è -1
+                        if resultCode == -1 and intentData is not None:
+                            uri = intentData.getData()
+                            if uri is not None:
+                                # Copiamo il file selezionato tramite il ContentResolver in una zona temporanea leggibile
+                                local_path = self._copia_uri_locale(uri)
+                                if local_path:
+                                    from kivy.clock import Clock
+                                    Clock.schedule_once(lambda dt: self._prepara_importazione([local_path], None), 0.1)
+
+                # Registriamo temporaneamente il listener per catturare il file scelto
+                result_listener = on_activity_result
+                mActivity.addActivityResultListener(result_listener)
+
+                mActivity.startActivityForResult(intent, CHOOSER_CODE)
+                print("Selettore file nativo Android aperto correttamente.")
+                return
+            except Exception as e:
+                print(f"Errore nell'apertura del selettore nativo Android: {e}")
+
+        # --- FALLBACK PER PC (Sviluppo su Ubuntu/Desktop) ---
+        box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
+        path_iniziale = get_export_folder()
+
         file_chooser = FileChooserListView(
             path=path_iniziale,
-            filters=[
-                lambda folder, filename: filename.endswith('.json') or os.path.isdir(os.path.join(folder, filename))],
+            filters=['*.json'],
             size_hint=(1, 1)
         )
         box.add_widget(file_chooser)
@@ -2681,7 +2711,7 @@ class WineApp(App):
         popup = Popup(
             title="Seleziona File da Importare",
             content=box,
-            size_hint=(0.9, 0.85)
+            size_hint=(0.9, 0.8)
         )
 
         btn_annulla.bind(on_release=popup.dismiss)
@@ -2689,17 +2719,14 @@ class WineApp(App):
         def conferma_selezione(instance):
             if file_chooser.selection:
                 file_scelto = file_chooser.selection[0]
-                if os.path.isfile(file_scelto):
-                    popup.dismiss()
-                    self._prepara_importazione([file_scelto], popup)
-                else:
-                    print("Seleziona un file valido, non una cartella.")
+                popup.dismiss()
+                self._prepara_importazione([file_scelto], popup)
 
         btn_conferma.bind(on_release=conferma_selezione)
         popup.open()
 
     def _copia_uri_locale(self, uri):
-        """Copia un URI Android in un file temporaneo locale accessibile da Python/TinyDB."""
+        """Legge l'URI esterno tramite ContentResolver e lo copia localmente per l'importazione."""
         try:
             from android import mActivity
             from jnius import autoclass
@@ -2722,10 +2749,10 @@ class WineApp(App):
 
             input_stream.close()
             out_stream.close()
-            print(f"File importato copiato localmente in: {local_path}")
+            print(f"File esterno copiato con successo in locale: {local_path}")
             return local_path
         except Exception as e:
-            print(f"Errore nella copia locale dell'URI: {e}")
+            print(f"Errore nella lettura del file esterno: {e}")
             return None
 
     def _ottieni_percorso_da_uri(self, uri):
