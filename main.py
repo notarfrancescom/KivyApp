@@ -2646,25 +2646,20 @@ class WineApp(App):
         view.open()
 
     def apri_file_chooser_importa(self):
-        """Apre un FileChooser stabile e sicuro puntando alla cartella di lavoro dell'app."""
+        """Apre un FileChooser puntando direttamente alla cartella Download pubblica su Android."""
         box = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
-        # Usiamo la cartella di lavoro sicura dell'app (es. get_export_folder())
-        path_iniziale = get_export_folder()
-        if not os.path.exists(path_iniziale):
-            os.makedirs(path_iniziale, exist_ok=True)
-
-        # Messaggio guida per l'utente
-        lbl_info = Label(
-            text=f"Seleziona il file di backup (.json) da importare:\n(Cartella: {path_iniziale})",
-            size_hint_y=None,
-            height=dp(55),
-            font_size='11sp',
-            halign='center',
-            valign='middle'
-        )
-        lbl_info.bind(size=lambda s, w: setattr(s, 'text_size', w))
-        box.add_widget(lbl_info)
+        from kivy.utils import platform
+        if platform == 'android':
+            try:
+                from android.storage import primary_external_storage_path
+                path_iniziale = os.path.join(primary_external_storage_path(), 'Download')
+                if not os.path.exists(path_iniziale):
+                    path_iniziale = primary_external_storage_path()
+            except Exception:
+                path_iniziale = get_export_folder()
+        else:
+            path_iniziale = get_export_folder()
 
         file_chooser = FileChooserListView(
             path=path_iniziale,
